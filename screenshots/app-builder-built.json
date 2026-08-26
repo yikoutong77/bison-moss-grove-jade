@@ -1,0 +1,38 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "酒馆战棋",
+      "hasCanvas": false,
+      "bodyTextLen": 68,
+      "bodyTextHash": "575196284fb6ebde653e5e16f227300bade02f41253e0df558369646f6ed62b0",
+      "bodyTextPrefix": "八人混战 · 自动对战 酒馆战棋 招募随从、三连升金、升级酒馆。回合结束后战场将自动交锋，最后活下来的英雄加冕为王。 开始对局 ",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "酒馆战棋",
+      "hasCanvas": false,
+      "bodyTextLen": 68,
+      "bodyTextHash": "575196284fb6ebde653e5e16f227300bade02f41253e0df558369646f6ed62b0",
+      "bodyTextPrefix": "八人混战 · 自动对战 酒馆战棋 招募随从、三连升金、升级酒馆。回合结束后战场将自动交锋，最后活下来的英雄加冕为王。 开始对局 ",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-built.json",
+  "divergesFromBaseline": false,
+  "baselineReasons": []
+}

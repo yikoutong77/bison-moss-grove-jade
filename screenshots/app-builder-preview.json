@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "酒馆战棋",
+      "hasCanvas": false,
+      "bodyTextLen": 70,
+      "bodyTextHash": "b6cd13944a9deeb5b7c199ef3cf0093a7bb7283887c4cd1936f65ac22bfe2543",
+      "bodyTextPrefix": "八人混战 · 自动对战 酒馆战棋 招募随从、释放英雄技能、三连升金。回合结束后自动交锋，护甲先于生命承受伤害。 开始对局 玩法说",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "酒馆战棋",
+      "hasCanvas": false,
+      "bodyTextLen": 70,
+      "bodyTextHash": "b6cd13944a9deeb5b7c199ef3cf0093a7bb7283887c4cd1936f65ac22bfe2543",
+      "bodyTextPrefix": "八人混战 · 自动对战 酒馆战棋 招募随从、释放英雄技能、三连升金。回合结束后自动交锋，护甲先于生命承受伤害。 开始对局 玩法说",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}
