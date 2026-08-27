@@ -36,6 +36,16 @@ interface Ctx {
 
 const TableDragCtx = createContext<Ctx | null>(null);
 
+function clientToStage(clientX: number, clientY: number) {
+  const stage = document.querySelector(".play-stage") as HTMLElement | null;
+  if (!stage) return { x: clientX, y: clientY, host: document.body };
+  if (!stage.classList.contains("is-rotate")) {
+    const r = stage.getBoundingClientRect();
+    return { x: clientX - r.left, y: clientY - r.top, host: stage };
+  }
+  return { x: clientY, y: stage.offsetHeight - clientX, host: stage };
+}
+
 export function useTableDrag() {
   const ctx = useContext(TableDragCtx);
   if (!ctx) throw new Error("useTableDrag outside provider");
@@ -89,7 +99,8 @@ export function TableDragProvider({
           /* ignore */
         }
       }
-      setDrag({ ...start.payload, x: ev.clientX, y: ev.clientY });
+      const local = clientToStage(ev.clientX, ev.clientY);
+      setDrag({ ...start.payload, x: local.x, y: local.y });
       setOver(hitDrop(ev.clientX, ev.clientY));
     };
     const up = (ev: PointerEvent) => {
@@ -118,26 +129,29 @@ export function TableDragProvider({
 
   const value = useMemo(() => ({ drag, begin, over }), [drag, begin, over]);
   const verb = drag?.from === "shop" ? "购买" : drag?.from === "hand" ? "上场" : "移动";
+  const host =
+    (typeof document !== "undefined" && (document.querySelector(".play-stage") as HTMLElement | null)) ||
+    (typeof document !== "undefined" ? document.body : null);
 
   return (
     <TableDragCtx.Provider value={value}>
       {children}
       {drag &&
+        host &&
         createPortal(
           <div className="drag-ghost" style={{ left: drag.x, top: drag.y }}>
             {drag.art ? (
               <div className="drag-ghost-face">
                 <img src={artUrl(drag.art)} alt="" draggable={false} />
-                <span className="drag-ghost-stats">
-                  {drag.atk}/{drag.hp}
-                </span>
+                <span className="stat-orb atk">{drag.atk}</span>
+                <span className="stat-orb hp">{drag.hp}</span>
               </div>
             ) : (
               <span>{verb}</span>
             )}
             <span className="drag-ghost-tag">{over === "sell" ? "卖掉" : verb}</span>
           </div>,
-          document.body,
+          host,
         )}
     </TableDragCtx.Provider>
   );

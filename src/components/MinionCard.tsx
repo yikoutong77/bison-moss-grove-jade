@@ -139,6 +139,7 @@ export function MinionCard({
         selected && "is-selected",
         frozen && "is-frozen",
         taunt && "is-taunt",
+        reborn && "is-reborn",
         attacking && "is-attacking",
         hit && "is-hit",
         dead && "is-dead",
@@ -146,32 +147,21 @@ export function MinionCard({
       )}
     >
       {taunt && (
-        <svg className="kw-taunt" viewBox="0 0 100 124" aria-hidden>
+        <svg className="kw-taunt" viewBox="0 0 100 134" preserveAspectRatio="xMidYMid meet" aria-hidden>
           <defs>
             <linearGradient id={`tw-${inst.uid}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#8a6238" />
-              <stop offset="45%" stopColor="#5a3a1c" />
-              <stop offset="100%" stopColor="#2e1a0c" />
+              <stop offset="0%" stopColor="#9a7044" />
+              <stop offset="40%" stopColor="#5c3c1e" />
+              <stop offset="100%" stopColor="#2a170c" />
             </linearGradient>
           </defs>
-          <path
-            d="M50 5 L91 22 C95 58 84 96 50 118 C16 96 5 58 9 22 Z"
-            fill={`url(#tw-${inst.uid})`}
-            stroke="#1c1008"
-            strokeWidth="3.2"
-          />
-          <path
-            d="M50 14 L82 26 C85 56 76 88 50 106 C24 88 15 56 18 26 Z"
-            fill="none"
-            stroke="#c4a06a"
-            strokeWidth="1.4"
-            opacity="0.55"
-          />
-          <circle cx="50" cy="20" r="3.2" fill="#d8c090" stroke="#2a1608" strokeWidth="1" />
-          <circle cx="22" cy="48" r="2.6" fill="#d8c090" stroke="#2a1608" strokeWidth="1" />
-          <circle cx="78" cy="48" r="2.6" fill="#d8c090" stroke="#2a1608" strokeWidth="1" />
-          <circle cx="32" cy="92" r="2.4" fill="#c4a06a" stroke="#2a1608" strokeWidth="1" />
-          <circle cx="68" cy="92" r="2.4" fill="#c4a06a" stroke="#2a1608" strokeWidth="1" />
+          <ellipse cx="50" cy="64" rx="48" ry="62" fill={`url(#tw-${inst.uid})`} stroke="#1a1008" strokeWidth="2.4" />
+          <ellipse cx="50" cy="64" rx="38" ry="51" fill="none" stroke="#c4a06a" strokeWidth="1.6" opacity="0.55" />
+          <circle cx="50" cy="10" r="3" fill="#e0c790" stroke="#2a1608" strokeWidth="0.9" />
+          <circle cx="12" cy="50" r="2.6" fill="#e0c790" stroke="#2a1608" strokeWidth="0.9" />
+          <circle cx="88" cy="50" r="2.6" fill="#e0c790" stroke="#2a1608" strokeWidth="0.9" />
+          <circle cx="22" cy="108" r="2.5" fill="#d0b078" stroke="#2a1608" strokeWidth="0.9" />
+          <circle cx="78" cy="108" r="2.5" fill="#d0b078" stroke="#2a1608" strokeWidth="0.9" />
         </svg>
       )}
       {(shield || shieldBreak) && (
@@ -216,18 +206,19 @@ export function MinionCard({
           </span>
         )}
         {reborn && (
-          <span className="kw-mark kw-reborn" title="复生">
-            <svg viewBox="0 0 16 16" className="size-full" aria-hidden>
+          <div className="kw-reborn-badge" title="复生">
+            <svg viewBox="0 0 32 36" aria-hidden>
               <path
-                d="M4.2 14 V7.2 C4.2 4.2 5.7 2.6 8 2.6 C10.3 2.6 11.8 4.2 11.8 7.2 V14 Z"
-                fill="#d4cdc0"
-                stroke="#3a3228"
-                strokeWidth="1.1"
+                d="M8 34 V16 C8 8 12 4 16 4 C20 4 24 8 24 16 V34 Z"
+                fill="#d8d0c4"
+                stroke="#2e2820"
+                strokeWidth="1.6"
               />
-              <rect x="3" y="13.1" width="10" height="1.8" rx="0.35" fill="#9a9080" stroke="#3a3228" strokeWidth="0.6" />
-              <path d="M8 5.4 V10.2 M6.4 7 H9.6" stroke="#4a4034" strokeWidth="1.15" strokeLinecap="round" />
+              <rect x="5" y="32" width="22" height="3.4" rx="0.6" fill="#8a8074" stroke="#2e2820" strokeWidth="1" />
+              <path d="M16 11 V24 M11.5 15.5 H20.5" stroke="#3f372e" strokeWidth="2" strokeLinecap="round" />
             </svg>
-          </span>
+            <span>复生</span>
+          </div>
         )}
         <div className="minion-caption">
           <div className="minion-name">{name}</div>
