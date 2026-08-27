@@ -761,27 +761,28 @@ body,
   --table-card: min(5.1rem, 11.5cqw, calc((100cqh - 40px) / 4.45));
 }
 .tavern-shell {
-  --table-card: min(4.5rem, 10.2cqw, calc((100cqh - 38px) / 5.35));
+  --table-card: min(4.25rem, 10.4cqw, calc((100cqh - 34px) / 5.2));
 }
 .tavern-desk {
   position: relative;
   display: grid;
   min-height: 0;
-  grid-template-rows: auto minmax(0, 0.95fr) minmax(0, 1.2fr) auto;
-  padding: 0.08rem 0.45rem 0.15rem;
+  grid-template-rows: auto minmax(0, 1fr) minmax(0, 1.2fr) auto;
+  padding: 0.06rem 0.4rem 0.1rem;
 }
 .bob-row,
 .you-row {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
   min-height: 0;
+  flex-shrink: 0;
 }
 .desk-portrait {
   position: relative;
-  width: 5.35rem;
-  height: 5.35rem;
+  width: 4rem;
+  height: 4rem;
   flex-shrink: 0;
   border-radius: 50%;
   border: 2px solid var(--color-gold);
@@ -903,16 +904,21 @@ body,
 }
 .hand-tray {
   display: flex;
-  max-width: min(70cqw, 28rem);
+  max-width: min(52cqw, 20rem);
   flex-direction: row-reverse;
-  gap: 0.15rem;
+  gap: 0;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border-radius: 12px;
-  background: rgb(12 8 6 / 0.72);
-  padding: 0.3rem 0.4rem;
+  background: rgb(12 8 6 / 0.78);
+  padding: 0.22rem 0.55rem 0.28rem;
 }
 .hand-tray > * {
-  margin-inline: -0.28rem;
+  flex: 0 0 auto;
+  margin-left: calc(var(--table-card, 4.5rem) * -0.58);
+}
+.hand-tray > *:first-child {
+  margin-left: 0;
 }
 
 .combat-shell {
@@ -1138,9 +1144,10 @@ body,
   flex: 1;
   align-items: center;
   justify-content: center;
-  gap: 0.38rem;
-  padding: 0.28rem 0.15rem 0.45rem;
+  gap: 0.42rem;
+  padding: 0.1rem 0.2rem 0.22rem;
   overflow-x: auto;
+  overflow-y: visible;
   -webkit-overflow-scrolling: touch;
 }
 .empty-row {
@@ -1264,7 +1271,7 @@ body,
   min-height: 0;
   overflow: visible;
   grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 1fr) auto;
-  padding: 0.12rem 0.75rem 0.2rem;
+  padding: 0.1rem 0.55rem 0.16rem;
 }
 .combat-hero-wrap {
   display: flex;
@@ -1272,8 +1279,8 @@ body,
   padding: 0.08rem 0;
 }
 .combat-hero {
-  width: 5.2rem;
-  height: 5.2rem;
+  width: 4rem;
+  height: 4rem;
 }
 .combat-hero.is-ghost {
   opacity: 0.72;
@@ -1290,7 +1297,7 @@ body,
   text-shadow: 0 1px 2px #000;
 }
 .combat-hero-hp b {
-  font-size: 1.35rem;
+  font-size: 1.15rem;
   font-weight: 800;
   color: #fff;
 }
