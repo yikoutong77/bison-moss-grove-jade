@@ -74,6 +74,8 @@ export interface Snapshot {
   discover: MinionInst[];
   heroChoices: HeroDef[];
   tavernEndsAt: number | null;
+  combatEndsAt: number | null;
+  rope: boolean;
   endedTurn: boolean;
   toast: string | null;
 }

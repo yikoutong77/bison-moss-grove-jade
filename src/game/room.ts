@@ -50,6 +50,9 @@ export interface RoomHooks {
   cancel: (key: string) => void;
 }
 
+const ROPE_MS = 15_000;
+const RESULT_HOLD_MS = 10_000;
+
 function tavernMs(turn: number): number {
   return Math.min(90_000, 40_000 + turn * 5_000);
 }
@@ -71,6 +74,8 @@ export class GameRoom {
   lastGhost: string | undefined;
   nextPlace = 8;
   tavernEndsAt: number | null = null;
+  combatEndsAt: number | null = null;
+  ropeLit = false;
   toast: string | null = null;
   hooks: RoomHooks;
 
@@ -185,9 +190,6 @@ export class GameRoom {
         this.hooks.onChange();
         break;
       case "combatDone":
-        this.combatAck.add(playerId);
-        this.maybeNextTurn();
-        this.hooks.onChange();
         break;
       default:
         break;
@@ -215,6 +217,8 @@ export class GameRoom {
       discover,
       heroChoices: human?.heroChoices ?? [],
       tavernEndsAt: this.tavernEndsAt,
+      combatEndsAt: this.combatEndsAt,
+      rope: this.ropeLit || (this.tavernEndsAt != null && this.tavernEndsAt - Date.now() <= ROPE_MS),
       endedTurn: this.ended.has(viewerId),
       toast: this.toast,
     };
@@ -350,6 +354,8 @@ export class GameRoom {
     this.discover.clear();
     this.combats.clear();
     this.combatAck.clear();
+    this.ropeLit = false;
+    this.combatEndsAt = null;
     this.phase = "tavern";
     this.tavernEndsAt = Date.now() + tavernMs(this.turn);
     this.toast = `第 ${this.turn} 回合`;
@@ -431,8 +437,29 @@ export class GameRoom {
     if (this.phase !== "tavern" && this.phase !== "discover") return;
     this.ended.add(playerId);
     this.discover.delete(playerId);
+    this.pullRope();
     this.maybeResolveCombat();
     this.hooks.onChange();
+  }
+
+  private pullRope() {
+    if (this.phase !== "tavern" && this.phase !== "discover") return;
+    const humans = [...this.humans.keys()].filter((id) => this.player(id)?.alive);
+    if (!humans.some((id) => this.ended.has(id))) return;
+    if (humans.every((id) => this.ended.has(id))) return;
+    const left = (this.tavernEndsAt ?? Date.now()) - Date.now();
+    if (left <= ROPE_MS + 50) {
+      this.ropeLit = true;
+      return;
+    }
+    this.ropeLit = true;
+    this.tavernEndsAt = Date.now() + ROPE_MS;
+    this.toast = "有人结束了回合，绳子开始燃烧";
+    this.hooks.cancel(`tavern:${this.code}`);
+    this.hooks.schedule(`tavern:${this.code}`, ROPE_MS, () => {
+      for (const h of this.humans.keys()) this.ended.add(h);
+      this.maybeResolveCombat();
+    });
   }
 
   private maybeResolveCombat() {
@@ -504,10 +531,19 @@ export class GameRoom {
     this.nextPlace = nextPlace;
     this.phase = "combat";
     this.tavernEndsAt = null;
+    this.ropeLit = false;
     this.combatAck.clear();
     this.ended.clear();
+    let maxAt = 3500;
+    for (const c of this.combats.values()) {
+      for (const e of c.events) {
+        if ((e.at ?? 0) > maxAt) maxAt = e.at;
+      }
+    }
+    const watchMs = maxAt + RESULT_HOLD_MS;
+    this.combatEndsAt = Date.now() + watchMs;
     this.hooks.cancel(`combat:${this.code}`);
-    this.hooks.schedule(`combat:${this.code}`, 90_000, () => {
+    this.hooks.schedule(`combat:${this.code}`, watchMs, () => {
       for (const id of this.humans.keys()) this.combatAck.add(id);
       this.maybeNextTurn();
     });
@@ -536,6 +572,8 @@ export class GameRoom {
     this.discover.clear();
     this.combatAck.clear();
     this.ended.clear();
+    this.ropeLit = false;
+    this.combatEndsAt = null;
     this.phase = "tavern";
     this.tavernEndsAt = Date.now() + tavernMs(this.turn);
     this.toast = `第 ${this.turn} 回合`;

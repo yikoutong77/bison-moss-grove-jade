@@ -66,6 +66,8 @@ interface GameState {
   seats: SeatView[];
   endedTurn: boolean;
   tavernEndsAt: number | null;
+  combatEndsAt: number | null;
+  rope: boolean;
 }
 
 interface GameActions {
@@ -194,6 +196,8 @@ export const useGame = create<GameState & GameActions>((set, get) => {
   seats: [],
   endedTurn: false,
   tavernEndsAt: null,
+  combatEndsAt: null,
+  rope: false,
 
   you: () => get().players.find((p) => p.id === get().youId),
 
@@ -246,7 +250,10 @@ export const useGame = create<GameState & GameActions>((set, get) => {
   selectHand: (uid) => set({ selectedHand: uid, selectedShop: null, selectedBoard: null }),
   setToast: (t) => set({ toast: t }),
   setHelp: (v) => set({ help: v }),
-  setSpeed: (s) => set({ speed: s }),
+  setSpeed: (s) => {
+    if (get().mode === "online") return;
+    set({ speed: s });
+  },
   setCombatCursor: (n) => set({ combatCursor: n }),
   setMuted: (v) => {
     set({ muted: v });
@@ -591,15 +598,11 @@ export const useGame = create<GameState & GameActions>((set, get) => {
     const { combat, phase, mode } = get();
     if ((phase !== "combat" && phase !== "matchup") || !combat) return;
     set({ combatCursor: combat.events.length - 1, phase: "result" });
-    if (mode === "online") send({ t: "combatDone" });
+    if (mode === "online") return;
   },
 
   continueFromResult: () => {
-    if (get().mode === "online") {
-      send({ t: "combatDone" });
-      set({ toast: "等待其他玩家进入下一回合…" });
-      return;
-    }
+    if (get().mode === "online") return;
     const st = get();
     const combat = st.combat;
     if (!combat) return;
@@ -763,7 +766,7 @@ export const useGame = create<GameState & GameActions>((set, get) => {
       prev.events.length === s.combat.events.length;
     set({
       mode: "online",
-      phase: s.phase,
+      phase: sameFight && get().phase === "result" && s.phase === "combat" ? "result" : s.phase,
       turn: s.turn,
       youId: s.youId,
       roomCode: s.roomCode,
@@ -776,7 +779,10 @@ export const useGame = create<GameState & GameActions>((set, get) => {
       discover: s.discover,
       heroChoices: s.heroChoices,
       tavernEndsAt: s.tavernEndsAt,
+      combatEndsAt: s.combatEndsAt,
+      rope: s.rope,
       endedTurn: s.endedTurn,
+      speed: 1,
       toast: s.toast ?? get().toast,
     });
   },

@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 function TurnClock() {
   const endsAt = useGame((s) => s.tavernEndsAt);
   const ended = useGame((s) => s.endedTurn);
+  const rope = useGame((s) => s.rope);
   const [left, setLeft] = useState(0);
   useEffect(() => {
     if (!endsAt) {
@@ -16,12 +17,13 @@ function TurnClock() {
     }
     const tick = () => setLeft(Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
     tick();
-    const id = window.setInterval(tick, 250);
+    const id = window.setInterval(tick, 200);
     return () => window.clearInterval(id);
   }, [endsAt]);
   if (!endsAt) return null;
+  const hot = rope || left <= 15;
   return (
-    <div className="hud-chip tabular">
+    <div className={cn("hud-chip tabular", hot && "is-rope")}>
       {ended ? "等待中" : `${left}s`}
     </div>
   );

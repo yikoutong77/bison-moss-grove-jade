@@ -3,6 +3,7 @@ import { Hud } from "./Hud";
 import { LobbyStrip } from "./LobbyStrip";
 import { MinionCard } from "./MinionCard";
 import { MinionInspect } from "./MinionInspect";
+import { BurningRope } from "./BurningRope";
 import { Draggable, Droppable, TableDragProvider, type DragPayload } from "./table-drag";
 import { useGame } from "@/game/store";
 import { MAX_BOARD, MAX_HAND, TRIBE_LABEL, defOf } from "@/game/minions";
@@ -286,6 +287,7 @@ export function TavernScreen() {
         )}
 
         <MinionInspect />
+        <BurningRope />
       </div>
     </TableDragProvider>
   );

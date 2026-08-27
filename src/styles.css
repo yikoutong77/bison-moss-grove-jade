@@ -407,6 +407,7 @@ body,
 }
 
 .table-shell {
+  position: relative;
   height: 100%;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -742,4 +743,70 @@ input {
   color: inherit;
   font: inherit;
 }
+
+.hud-chip.is-rope {
+  border-color: var(--color-hp);
+  color: var(--color-hp);
+  font-weight: 700;
+  min-width: 3.2rem;
+  justify-content: center;
+}
+
+.fuse-wrap {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.35rem;
+  left: 5.2rem;
+  z-index: 8;
+  pointer-events: none;
+}
+.fuse-track {
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--color-ember) 70%, #000);
+  border-radius: 99px;
+  background: #1a0c08;
+  box-shadow: 0 0 12px color-mix(in oklab, var(--color-ember) 35%, transparent);
+}
+.fuse-left {
+  position: relative;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #5a2208, var(--color-ember), #ffd27a);
+  transition: width 80ms linear;
+}
+.fuse-ember {
+  position: absolute;
+  top: -4px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 99px;
+  background: radial-gradient(circle, #fff6c8 0%, #ff7a18 45%, transparent 70%);
+  animation: fuse-flicker 0.35s ease-in-out infinite alternate;
+}
+.fuse-label {
+  margin-top: 0.15rem;
+  text-align: right;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-hp);
+  text-shadow: 0 1px 0 #000;
+}
+@keyframes fuse-flicker {
+  from {
+    transform: scale(0.86);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fuse-ember {
+    animation: none;
+  }
+}
+
 

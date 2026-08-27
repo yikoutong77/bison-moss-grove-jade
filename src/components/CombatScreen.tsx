@@ -12,6 +12,27 @@ import type { CombatMinion } from "@/game/types";
 import { sfx } from "@/game/audio";
 import { cn } from "@/lib/utils";
 
+function CombatWaitClock({ label = false }: { label?: boolean }) {
+  const endsAt = useGame((s) => s.combatEndsAt);
+  const [left, setLeft] = useState(0);
+  useEffect(() => {
+    if (!endsAt) {
+      setLeft(0);
+      return;
+    }
+    const tick = () => setLeft(Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
+    tick();
+    const id = window.setInterval(tick, 200);
+    return () => window.clearInterval(id);
+  }, [endsAt]);
+  if (!endsAt) return label ? <>时间到后自动进入下一回合</> : <span className="text-xs text-faint">同步中</span>;
+  return (
+    <span className="tabular text-sm text-gold-2">
+      {label ? `${left}s 后进入下一回合` : `${left}s`}
+    </span>
+  );
+}
+
 export function CombatScreen() {
   const combat = useGame((s) => s.combat);
   const events = useGame((s) => s.combatEvents);
@@ -23,6 +44,9 @@ export function CombatScreen() {
   const inspectMinion = useGame((s) => s.inspectMinion);
   const players = useGame((s) => s.players);
   const youId = useGame((s) => s.youId);
+  const mode = useGame((s) => s.mode);
+  const online = mode === "online";
+  const playSpeed = online ? 1 : speed;
 
   const [view, setView] = useState<PlaybackState | null>(null);
   const [paused, setPaused] = useState(false);
@@ -65,7 +89,7 @@ export function CombatScreen() {
   };
 
   const seekBeat = (beatId: number) => {
-    if (!combat) return;
+    if (!combat || online) return;
     const last = lastEventIndexOfBeat(combat.events, beatId);
     const state = replayTo(combat.playerStart, combat.enemyStart, combat.events, last);
     stateRef.current = state;
@@ -86,7 +110,7 @@ export function CombatScreen() {
       if (pausedRef.current) return;
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
-      clockRef.current += dt * speed;
+      clockRef.current += dt * playSpeed;
       const clockMs = clockRef.current * 1000;
       let i = idxRef.current;
       let state = stateRef.current;
@@ -116,10 +140,27 @@ export function CombatScreen() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [phase, events, speed, paused, startKey]);
+  }, [phase, events, playSpeed, paused, startKey]);
+
+  useEffect(() => {
+    if (online) setPaused(false);
+  }, [online, startKey]);
 
   useEffect(() => {
     if (phase !== "result" || !combat || held) return;
+    if (online) {
+      const endState = replayTo(
+        combat.playerStart,
+        combat.enemyStart,
+        combat.events,
+        combat.events.length - 1,
+      );
+      stateRef.current = endState;
+      idxRef.current = combat.events.length;
+      setView(endState);
+      setActiveBeat(Math.max(0, (combat.beats.at(-1)?.id ?? 0)));
+      return;
+    }
     const endState = replayTo(
       combat.playerStart,
       combat.enemyStart,
@@ -134,7 +175,7 @@ export function CombatScreen() {
       continueFromResult();
     }, 4000);
     return () => window.clearTimeout(t);
-  }, [phase, combat, held, continueFromResult]);
+  }, [phase, combat, held, continueFromResult, online]);
 
   const floatByUid = useMemo(() => {
     const m = new Map<string, string>();
@@ -192,27 +233,29 @@ export function CombatScreen() {
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            {phase === "combat" && (
+            {!online && phase === "combat" && (
               <button type="button" className="action-btn px-3" onClick={() => setPaused((p) => !p)}>
                 {paused ? <Play className="size-4" /> : <Pause className="size-4" />}
               </button>
             )}
-            {([1, 2, 4] as const).map((sp) => (
-              <button
-                key={sp}
-                type="button"
-                className={cn("action-btn px-3", speed === sp && "primary")}
-                onClick={() => setSpeed(sp)}
-              >
-                {sp}x
-              </button>
-            ))}
-            {phase !== "result" && (
+            {!online &&
+              ([1, 2, 4] as const).map((sp) => (
+                <button
+                  key={sp}
+                  type="button"
+                  className={cn("action-btn px-3", speed === sp && "primary")}
+                  onClick={() => setSpeed(sp)}
+                >
+                  {sp}x
+                </button>
+              ))}
+            {!online && phase !== "result" && (
               <button type="button" className="action-btn" onClick={skipCombat}>
                 <FastForward className="size-4" />
                 跳过
               </button>
             )}
+            {online && <CombatWaitClock />}
           </div>
         </div>
       </div>
@@ -238,6 +281,7 @@ export function CombatScreen() {
           onSeek={seekBeat}
           expanded={expanded}
           onToggle={() => {
+            if (online) return;
             setExpanded((v) => !v);
             setHeld(true);
             setPaused(true);
@@ -271,21 +315,29 @@ export function CombatScreen() {
               </div>
             )}
             <div className="mt-4 flex flex-wrap justify-center gap-2">
-              <button
-                type="button"
-                className="action-btn"
-                onClick={() => {
-                  setHeld(true);
-                  setExpanded(true);
-                }}
-              >
-                查看战报
-              </button>
-              <button type="button" className="action-btn primary" onClick={continueFromResult}>
-                回到酒馆
-              </button>
+              {online ? (
+                <p className="text-sm text-gold-2">
+                  <CombatWaitClock label />
+                </p>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="action-btn"
+                    onClick={() => {
+                      setHeld(true);
+                      setExpanded(true);
+                    }}
+                  >
+                    查看战报
+                  </button>
+                  <button type="button" className="action-btn primary" onClick={continueFromResult}>
+                    回到酒馆
+                  </button>
+                </>
+              )}
             </div>
-            <p className="mt-2 text-xs text-faint">数秒后自动返回酒馆</p>
+            {!online && <p className="mt-2 text-xs text-faint">数秒后自动返回酒馆</p>}
           </div>
         </div>
       )}
@@ -295,9 +347,11 @@ export function CombatScreen() {
             {combat.winner === "player" ? "胜利" : combat.winner === "enemy" ? "战败" : "平局"}
             {combat.damage ? ` · ${combat.damage} 伤` : ""}
           </span>
-          <button type="button" className="action-btn primary" onClick={continueFromResult}>
-            回到酒馆
-          </button>
+          {online ? <CombatWaitClock /> : (
+            <button type="button" className="action-btn primary" onClick={continueFromResult}>
+              回到酒馆
+            </button>
+          )}
         </div>
       )}
       <MinionInspect />
