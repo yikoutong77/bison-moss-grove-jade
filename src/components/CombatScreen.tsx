@@ -32,6 +32,49 @@ function CombatWaitClock({ label = false }: { label?: boolean }) {
   );
 }
 
+function CombatHero({
+  art,
+  name,
+  hp,
+  armor,
+  ghost,
+  burst,
+}: {
+  art?: string;
+  name: string;
+  hp: number;
+  armor: number;
+  ghost?: boolean;
+  burst?: number;
+}) {
+  const [shown, setShown] = useState(hp);
+  useEffect(() => {
+    if (!burst) {
+      setShown(hp);
+      return;
+    }
+    const t = window.setTimeout(() => setShown(Math.max(0, hp - burst)), 200);
+    return () => window.clearTimeout(t);
+  }, [burst, hp]);
+  return (
+    <div className="combat-hero-wrap">
+      <div className={cn("desk-portrait combat-hero", ghost && "is-ghost", burst && "is-burst")}>
+        {art && <img src={heroArt(art)} alt={name} draggable={false} />}
+        <span className="combat-hero-hp">
+          <b className="tabular">{shown}</b>
+          <small>30</small>
+          {armor > 0 && !burst && <em>+{armor}</em>}
+        </span>
+        {!!burst && (
+          <span className="hero-burst" aria-hidden>
+            -{burst}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function CombatScreen() {
   const combat = useGame((s) => s.combat);
   const events = useGame((s) => s.combatEvents);
@@ -57,6 +100,8 @@ export function CombatScreen() {
   const stateRef = useRef<PlaybackState | null>(null);
   const pausedRef = useRef(false);
 
+  const [facePop, setFacePop] = useState(0);
+
   const you = players.find((p) => p.id === youId);
   const opp = players.find((p) => p.id === combat?.opponentId);
   const youHero = you ? HERO_BY_ID[you.heroId] : undefined;
@@ -79,6 +124,7 @@ export function CombatScreen() {
     setPaused(false);
     setHeld(false);
     setExpanded(false);
+    setFacePop(0);
   }, [startKey, combat]);
 
   const sync = (state: PlaybackState, index: number) => {
@@ -146,20 +192,11 @@ export function CombatScreen() {
   }, [online, startKey]);
 
   useEffect(() => {
-    if (phase !== "result" || !combat || held) return;
-    if (online) {
-      const endState = replayTo(
-        combat.playerStart,
-        combat.enemyStart,
-        combat.events,
-        combat.events.length - 1,
-      );
-      stateRef.current = endState;
-      idxRef.current = combat.events.length;
-      setView(endState);
-      setActiveBeat(Math.max(0, (combat.beats.at(-1)?.id ?? 0)));
-      return;
-    }
+    if (phase !== "result" || !combat) return;
+    const dmg =
+      combat.damage > 0 && combat.winner !== "tie" && !(combat.ghost && combat.winner === "player")
+        ? combat.damage
+        : 0;
     const endState = replayTo(
       combat.playerStart,
       combat.enemyStart,
@@ -169,36 +206,41 @@ export function CombatScreen() {
     stateRef.current = endState;
     idxRef.current = combat.events.length;
     setView(endState);
-    setActiveBeat(Math.max(0, (combat.beats.at(-1)?.id ?? 0)));
+    setActiveBeat(Math.max(0, combat.beats.at(-1)?.id ?? 0));
+    const popTimer = window.setTimeout(() => {
+      if (dmg) {
+        setFacePop(dmg);
+        sfx.hit();
+      }
+    }, 280);
+    if (online) {
+      return () => window.clearTimeout(popTimer);
+    }
     const t = window.setTimeout(() => {
       continueFromResult();
-    }, 4000);
-    return () => window.clearTimeout(t);
-  }, [phase, combat, held, continueFromResult, online]);
+    }, dmg ? 1450 : 700);
+    return () => {
+      window.clearTimeout(popTimer);
+      window.clearTimeout(t);
+    };
+  }, [phase, combat, continueFromResult, online]);
 
   if (!combat || !you || !view) return null;
 
-  const bd = combat.breakdown;
+  const burstSide =
+    facePop <= 0
+      ? null
+      : combat.winner === "player"
+        ? "enemy"
+        : combat.winner === "enemy"
+          ? "player"
+          : null;
 
   return (
     <div className="table-shell tavern-shell combat-shell">
       <div className="table-top">
         <LobbyStrip />
         <div className="hud-bar is-compact">
-          <div className="flex items-center gap-2">
-            {oppHero && (
-              <img src={heroArt(oppHero.art)} alt="" className="size-8 rounded-full object-cover object-top" />
-            )}
-            <div className="min-w-0">
-              <div className="font-display truncate text-sm font-semibold">
-                {opp?.name ?? "对手"}
-                {combat.ghost ? " · 残影" : ""}
-              </div>
-              <div className="text-[0.65rem] text-muted">
-                {opp?.hp}血{opp && opp.armor > 0 ? ` · 甲${opp.armor}` : ""} · T{opp?.tavernTier}
-              </div>
-            </div>
-          </div>
           <div className="flex items-center gap-1.5">
             {!online && phase === "combat" && (
               <button type="button" className="action-btn px-3" onClick={() => setPaused((p) => !p)}>
@@ -237,18 +279,29 @@ export function CombatScreen() {
         strikeId={view.strikeId}
         floats={view.floats}
         onInspect={inspectMinion}
+        head={
+          <CombatHero
+            art={oppHero?.art}
+            name={opp?.name ?? "对手"}
+            hp={opp?.hp ?? 0}
+            armor={opp?.armor ?? 0}
+            ghost={combat.ghost}
+            burst={burstSide === "enemy" ? facePop : 0}
+          />
+        }
         mid={
           <div className="combat-banner">
             <span className="font-display text-sm text-gold-2">{view.banner}</span>
           </div>
         }
         foot={
-          <div className="flex items-center justify-center gap-2">
-            {youHero && (
-              <img src={heroArt(youHero.art)} alt="" className="size-7 rounded-full object-cover object-top" />
-            )}
-            <span className="text-xs text-muted">{you.name}</span>
-          </div>
+          <CombatHero
+            art={youHero?.art}
+            name={you.name}
+            hp={you.hp}
+            armor={you.armor}
+            burst={burstSide === "player" ? facePop : 0}
+          />
         }
       />
 
@@ -267,70 +320,10 @@ export function CombatScreen() {
         />
       </div>
 
-      {phase === "result" && !held && (
-        <div className="fixed inset-x-0 bottom-3 z-20 grid place-items-center p-3">
-          <div className="panel w-full max-w-md rounded-2xl p-5 text-center shadow-panel">
-            <h3 className="font-display text-2xl font-bold">
-              {combat.winner === "player" ? "胜利" : combat.winner === "enemy" ? "战败" : "势均力敌"}
-            </h3>
-            <p className="mt-2 text-muted">
-              {combat.winner === "tie"
-                ? "双方同归于尽，无人受伤。"
-                : combat.ghost && combat.winner === "player"
-                  ? "你击败了残影，对方本人不受伤。"
-                  : combat.winner === "player"
-                    ? `对手将受到 ${combat.damage} 点伤害。`
-                    : `你受到 ${combat.damage} 点伤害。`}
-            </p>
-            {bd && combat.winner !== "tie" && (
-              <div className="mt-3 text-sm text-gold-2">
-                酒馆 {bd.tavernTier}
-                {bd.leftover.length
-                  ? ` + ${bd.leftover.map((m) => `${m.golden ? "金" : ""}${m.name}${m.tier}`).join("、")}`
-                  : ""}
-                {" = "}
-                {bd.total} 伤
-              </div>
-            )}
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {online ? (
-                <p className="text-sm text-gold-2">
-                  <CombatWaitClock label />
-                </p>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    className="action-btn"
-                    onClick={() => {
-                      setHeld(true);
-                      setExpanded(true);
-                    }}
-                  >
-                    查看战报
-                  </button>
-                  <button type="button" className="action-btn primary" onClick={continueFromResult}>
-                    回到酒馆
-                  </button>
-                </>
-              )}
-            </div>
-            {!online && <p className="mt-2 text-xs text-faint">数秒后自动返回酒馆</p>}
-          </div>
-        </div>
-      )}
-      {phase === "result" && held && (
-        <div className="flex flex-wrap items-center justify-center gap-2 px-3 pb-4">
-          <span className="font-display text-gold-2">
-            {combat.winner === "player" ? "胜利" : combat.winner === "enemy" ? "战败" : "平局"}
-            {combat.damage ? ` · ${combat.damage} 伤` : ""}
-          </span>
-          {online ? <CombatWaitClock /> : (
-            <button type="button" className="action-btn primary" onClick={continueFromResult}>
-              回到酒馆
-            </button>
-          )}
-        </div>
+      {online && phase === "result" && (
+        <p className="pb-2 text-center text-xs text-gold-2">
+          <CombatWaitClock label />
+        </p>
       )}
       <MinionInspect />
     </div>

@@ -30,7 +30,7 @@ export function Hud({ compact = false }: { compact?: boolean }) {
           <div className="text-[0.65rem] text-muted">第 {turn} 回合</div>
         </div>
       </div>
-      {power && (
+      {power && !compact && (
         <button
           type="button"
           className={cn("hero-power", you.powerUsed && "is-used")}
@@ -48,16 +48,18 @@ export function Hud({ compact = false }: { compact?: boolean }) {
         </button>
       )}
       <div className="flex shrink-0 items-center gap-1.5">
-        <div className="hud-chip">
-          <Heart className="size-4 text-hp" />
-          <span className="tabular font-semibold">{you.hp}</span>
-          {you.armor > 0 && (
-            <>
-              <Shield className="size-3.5 text-gold-2" />
-              <span className="tabular font-semibold">{you.armor}</span>
-            </>
-          )}
-        </div>
+        {!compact && (
+          <div className="hud-chip">
+            <Heart className="size-4 text-hp" />
+            <span className="tabular font-semibold">{you.hp}</span>
+            {you.armor > 0 && (
+              <>
+                <Shield className="size-3.5 text-gold-2" />
+                <span className="tabular font-semibold">{you.armor}</span>
+              </>
+            )}
+          </div>
+        )}
         <VolumeMixer />
         <button type="button" className="hud-chip" onClick={() => setHelp(true)} aria-label="帮助">
           <CircleHelp className="size-4" />

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Snowflake, Sparkles } from "lucide-react";
+import { Snowflake } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CombatMinion, MinionInst } from "@/game/types";
-import { KEYWORD_LABEL, artUrl, defOf } from "@/game/minions";
+import { artUrl, defOf } from "@/game/minions";
 import { useOptionalTableDrag } from "./table-drag";
 
 type Size = "sm" | "md" | "lg";
@@ -55,16 +55,6 @@ export function MinionCard({
   const poisonous = isCombat(inst) ? inst.poisonous : inst.keywords.includes("poisonous");
   const cleave = isCombat(inst) ? inst.cleave : inst.keywords.includes("cleave");
   const attacksMade = isCombat(inst) ? inst.attacksMade ?? 0 : 0;
-  const kws = isCombat(inst)
-    ? ([
-        inst.taunt && "taunt",
-        inst.divineShield && "divineShield",
-        inst.poisonous && "poisonous",
-        inst.reborn && "reborn",
-        inst.cleave && "cleave",
-        inst.windfury && "windfury",
-      ].filter(Boolean) as Array<keyof typeof KEYWORD_LABEL>)
-    : inst.keywords;
 
   const [artBroken, setArtBroken] = useState(false);
   useEffect(() => {
@@ -133,6 +123,7 @@ export function MinionCard({
       className={cn(
         "minion-card shrink-0 text-left",
         w,
+        `tribe-${d.tribe}`,
         compact && "is-compact",
         golden && "is-golden",
         gem && "is-gem",
@@ -146,24 +137,7 @@ export function MinionCard({
         dim && "opacity-50",
       )}
     >
-      {taunt && (
-        <svg className="kw-taunt" viewBox="0 0 100 134" preserveAspectRatio="xMidYMid meet" aria-hidden>
-          <defs>
-            <linearGradient id={`tw-${inst.uid}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#9a7044" />
-              <stop offset="40%" stopColor="#5c3c1e" />
-              <stop offset="100%" stopColor="#2a170c" />
-            </linearGradient>
-          </defs>
-          <ellipse cx="50" cy="64" rx="48" ry="62" fill={`url(#tw-${inst.uid})`} stroke="#1a1008" strokeWidth="2.4" />
-          <ellipse cx="50" cy="64" rx="38" ry="51" fill="none" stroke="#c4a06a" strokeWidth="1.6" opacity="0.55" />
-          <circle cx="50" cy="10" r="3" fill="#e0c790" stroke="#2a1608" strokeWidth="0.9" />
-          <circle cx="12" cy="50" r="2.6" fill="#e0c790" stroke="#2a1608" strokeWidth="0.9" />
-          <circle cx="88" cy="50" r="2.6" fill="#e0c790" stroke="#2a1608" strokeWidth="0.9" />
-          <circle cx="22" cy="108" r="2.5" fill="#d0b078" stroke="#2a1608" strokeWidth="0.9" />
-          <circle cx="78" cy="108" r="2.5" fill="#d0b078" stroke="#2a1608" strokeWidth="0.9" />
-        </svg>
-      )}
+      {taunt && <div className="kw-taunt" aria-hidden />}
       {(shield || shieldBreak) && (
         <div className={cn("kw-bubble", shieldBreak && "is-break")} aria-hidden>
           <span className="kw-bubble-shine" />
@@ -180,12 +154,8 @@ export function MinionCard({
           onError={() => setArtBroken(true)}
         />
         {artBroken && <div className="minion-silhouette" aria-hidden />}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-bg-deep to-transparent" />
         {frozen && <div className="frost-sheet" />}
         <div className="minion-tier">{d.tier}</div>
-        {golden && (
-          <Sparkles className="absolute left-1 bottom-8 size-3.5 text-gold-2" strokeWidth={2} />
-        )}
         {windfury && (
           <span
             className={cn("kw-mark kw-wind", attacksMade >= 1 && "is-spent", attacksMade >= 2 && "is-done")}
@@ -205,33 +175,6 @@ export function MinionCard({
             </svg>
           </span>
         )}
-        {reborn && (
-          <div className="kw-reborn-badge" title="复生">
-            <svg viewBox="0 0 32 36" aria-hidden>
-              <path
-                d="M8 34 V16 C8 8 12 4 16 4 C20 4 24 8 24 16 V34 Z"
-                fill="#d8d0c4"
-                stroke="#2e2820"
-                strokeWidth="1.6"
-              />
-              <rect x="5" y="32" width="22" height="3.4" rx="0.6" fill="#8a8074" stroke="#2e2820" strokeWidth="1" />
-              <path d="M16 11 V24 M11.5 15.5 H20.5" stroke="#3f372e" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            <span>复生</span>
-          </div>
-        )}
-        <div className="minion-caption">
-          <div className="minion-name">{name}</div>
-          {!compact && kws.length > 0 && (
-            <div className="mt-0.5 flex flex-wrap justify-center gap-0.5">
-              {kws.slice(0, 2).map((k) => (
-                <span key={k} className="kw-chip">
-                  {KEYWORD_LABEL[k]}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
         {showFreeze && onFreeze && (
           <span
             role="button"
@@ -253,6 +196,23 @@ export function MinionCard({
             <Snowflake className="size-3" />
           </span>
         )}
+      </div>
+      <div className="minion-plinth">
+        {reborn && (
+          <span className="kw-reborn-badge" title="复生">
+            <svg viewBox="0 0 32 36" aria-hidden>
+              <path
+                d="M8 34 V16 C8 8 12 4 16 4 C20 4 24 8 24 16 V34 Z"
+                fill="#d8d0c4"
+                stroke="#2e2820"
+                strokeWidth="1.6"
+              />
+              <rect x="5" y="32" width="22" height="3.4" rx="0.6" fill="#8a8074" stroke="#2e2820" strokeWidth="1" />
+              <path d="M16 11 V24 M11.5 15.5 H20.5" stroke="#3f372e" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </span>
+        )}
+        <div className="minion-name">{name}</div>
       </div>
       <span className={cn("stat-orb atk", poisonous && "is-poison")}>{inst.atk}</span>
       <span className="stat-orb hp">{inst.hp}</span>

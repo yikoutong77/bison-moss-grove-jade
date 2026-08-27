@@ -1,4 +1,4 @@
-import { RefreshCw, Snowflake, ArrowUpCircle, Flag, Coins, Eye } from "lucide-react";
+import { RefreshCw, Snowflake, ArrowUpCircle, Flag, Coins, Eye, Sparkles, Heart, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Hud } from "./Hud";
 import { LobbyStrip } from "./LobbyStrip";
@@ -6,8 +6,8 @@ import { MinionCard } from "./MinionCard";
 import { MinionInspect } from "./MinionInspect";
 import { Draggable, Droppable, TableDragProvider, useTableDrag, type DragPayload } from "./table-drag";
 import { useGame } from "@/game/store";
-import { MAX_BOARD, defOf } from "@/game/minions";
-import { upgradeCostNow } from "@/game/engine";
+import { MAX_BOARD, MAX_HAND, defOf } from "@/game/minions";
+import { upgradeCostNow, canUseHeroPower } from "@/game/engine";
 import { HERO_BY_ID, heroArt } from "@/game/heroes";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +29,7 @@ function EndTurnButton({ ended, onEnd }: { ended: boolean; onEnd: () => void }) 
   return (
     <button
       type="button"
-      className={cn("action-btn primary bob-btn end-turn", hot && "is-rope")}
+      className={cn("desk-end", hot && "is-rope")}
       disabled={ended}
       onClick={onEnd}
     >
@@ -40,17 +40,48 @@ function EndTurnButton({ ended, onEnd }: { ended: boolean; onEnd: () => void }) 
   );
 }
 
-function BobSeller({ gold }: { gold: number }) {
+function BobPortrait({ gold }: { gold: number }) {
   const { drag } = useTableDrag();
   const selling = Boolean(drag && (drag.from === "board" || drag.from === "hand"));
   return (
-    <Droppable id="sell" className={cn("bob-face", selling && "is-armed")}>
-      <div className="bob-name font-display">鲍勃</div>
-      <div className="bob-gold tabular">
-        <Coins className="size-3.5" />
+    <Droppable id="sell" className={cn("desk-portrait is-bob", selling && "is-armed")}>
+      <img src="/art/TB_BaconShopBob.jpg" alt="鲍勃" draggable={false} />
+      <span className="desk-gold tabular">
+        <Coins className="size-3" />
         {gold}
-      </div>
-      {selling && <span className="bob-sell-tip">卖掉 +1</span>}
+      </span>
+      {selling && <span className="desk-tip">卖掉 +1</span>}
+    </Droppable>
+  );
+}
+
+function YouPortrait({
+  art,
+  name,
+  hp,
+  armor,
+}: {
+  art: string;
+  name: string;
+  hp: number;
+  armor: number;
+}) {
+  const { drag } = useTableDrag();
+  const buying = drag?.from === "shop";
+  return (
+    <Droppable id="buy" className={cn("desk-portrait is-you", buying && "is-armed")}>
+      <img src={heroArt(art)} alt={name} draggable={false} />
+      <span className="desk-hp tabular">
+        <Heart className="size-3" />
+        {hp}
+        {armor > 0 && (
+          <>
+            <Shield className="size-3" />
+            {armor}
+          </>
+        )}
+      </span>
+      {buying && <span className="desk-tip">买进手牌</span>}
     </Droppable>
   );
 }
@@ -60,7 +91,6 @@ export function TavernScreen() {
   const players = useGame((s) => s.players);
   const selectedHand = useGame((s) => s.selectedHand);
   const buy = useGame((s) => s.buy);
-  const buyToBoard = useGame((s) => s.buyToBoard);
   const playHand = useGame((s) => s.playHand);
   const sell = useGame((s) => s.sell);
   const refresh = useGame((s) => s.refresh);
@@ -78,28 +108,40 @@ export function TavernScreen() {
   const scoutId = useGame((s) => s.scoutId);
   const openScout = useGame((s) => s.openScout);
   const endedTurn = useGame((s) => s.endedTurn);
+  const usePower = useGame((s) => s.usePower);
+  const [handOpen, setHandOpen] = useState(false);
 
   if (!you) return null;
   const frozen = you.shop.some((m) => m.frozen);
   const scout = players.find((p) => p.id === scoutId);
   const costUp = upgradeCostNow(you);
+  const hero = HERO_BY_ID[you.heroId];
+  const power = hero?.power;
+  const canCast = phase === "tavern" && canUseHeroPower(you).ok;
 
   const onDrop = (payload: DragPayload, drop: string) => {
     if (drop === "sell") {
       if (payload.from === "hand" || payload.from === "board") sell(payload.uid);
       return;
     }
-    if (drop === "hand") {
-      if (payload.from === "shop") buy(payload.uid);
+    if (drop === "buy") {
+      if (payload.from === "shop") {
+        buy(payload.uid);
+        setHandOpen(true);
+      }
       return;
     }
     if (drop.startsWith("board:")) {
       const index = Number(drop.slice(6));
       if (Number.isNaN(index)) return;
-      if (payload.from === "shop") buyToBoard(payload.uid, index);
-      else if (payload.from === "hand") playHand(payload.uid, index);
-      else move(payload.uid, index);
+      if (payload.from === "hand") playHand(payload.uid, index);
+      else if (payload.from === "board") move(payload.uid, index);
     }
+  };
+
+  const preview = (m: { uid: string; defId: string; atk: number; hp: number }) => {
+    const d = defOf(m.defId);
+    return { uid: m.uid, name: d.name, art: d.art, atk: m.atk, hp: m.hp };
   };
 
   return (
@@ -110,124 +152,139 @@ export function TavernScreen() {
           <Hud compact />
         </div>
 
-        <div className="table-main">
-          <aside className="bob-panel">
-            <BobSeller gold={you.gold} />
-            <button type="button" className="action-btn bob-btn" disabled={endedTurn || you.gold < 1} onClick={refresh} title="刷新 1金">
-              <RefreshCw className="size-3.5" />
-              1
-            </button>
-            <button type="button" className={cn("action-btn bob-btn", frozen && "is-frozen")} disabled={endedTurn} onClick={freezeAll} title={frozen ? "解冻" : "冻结商店"}>
-              <Snowflake className="size-3.5" />
-            </button>
+        <div className="tavern-desk">
+          <div className="bob-row">
             <button
               type="button"
-              className="action-btn gold bob-btn"
+              className="desk-glyph"
               disabled={endedTurn || you.tavernTier >= 6 || you.gold < costUp}
               onClick={upgrade}
               title={you.tavernTier >= 6 ? "酒馆满级" : `升级到 ${you.tavernTier + 1}`}
             >
-              <ArrowUpCircle className="size-3.5" />
-              {you.tavernTier >= 6 ? "T6" : costUp}
+              <ArrowUpCircle className="size-4" />
+              <span>{you.tavernTier >= 6 ? "T6" : costUp}</span>
             </button>
-            <EndTurnButton ended={endedTurn} onEnd={endTurn} />
-          </aside>
+            <BobPortrait gold={you.gold} />
+            <button
+              type="button"
+              className="desk-glyph"
+              disabled={endedTurn || you.gold < 1}
+              onClick={refresh}
+              title="刷新 1金"
+            >
+              <RefreshCw className="size-4" />
+              <span>1</span>
+            </button>
+            <button
+              type="button"
+              className={cn("desk-glyph", frozen && "is-frozen")}
+              disabled={endedTurn}
+              onClick={freezeAll}
+              title={frozen ? "解冻" : "冻结商店"}
+            >
+              <Snowflake className="size-4" />
+            </button>
+          </div>
 
-          <div className="table-field">
-            <section className="table-row shop-row">
-              <div className="row-cards">
-                {you.shop.length === 0 && <p className="empty-row">刷新</p>}
-                {you.shop.map((m) => (
-                  <Draggable
-                    key={m.uid}
-                    from="shop"
-                    uid={m.uid}
-                    name={defOf(m.defId).name}
-                    art={defOf(m.defId).art}
-                    atk={m.atk}
-                    hp={m.hp}
-                  >
-                    <MinionCard
-                      inst={m}
-                      size="md"
-                      compact
-                      onInspect={() => inspectMinion(m)}
-                      onClick={() => buy(m.uid)}
-                    />
+          <section className="table-row shop-row">
+            <div className="row-cards">
+              {you.shop.length === 0 && <p className="empty-row">刷新</p>}
+              {you.shop.map((m) => {
+                const p = preview(m);
+                return (
+                  <Draggable key={m.uid} from="shop" uid={m.uid} name={p.name} art={p.art} atk={p.atk} hp={p.hp}>
+                    <MinionCard inst={m} size="md" compact onInspect={() => inspectMinion(m)} />
                   </Draggable>
-                ))}
-              </div>
-            </section>
+                );
+              })}
+            </div>
+          </section>
 
-            <section className="table-row board-row">
-              <div className="row-cards">
-                {Array.from({ length: MAX_BOARD }).map((_, i) => {
-                  const m = you.board[i];
-                  return (
-                    <Droppable
-                      key={m?.uid ?? `slot-${i}`}
-                      id={`board:${i}`}
-                      className={cn("slot table-slot", m && "is-filled", selectedHand && !m && "is-play")}
-                    >
-                      {m ? (
-                        <Draggable
-                          from="board"
-                          uid={m.uid}
-                          name={defOf(m.defId).name}
-                          art={defOf(m.defId).art}
-                          atk={m.atk}
-                          hp={m.hp}
-                        >
-                          <MinionCard
-                            inst={m}
-                            size="md"
-                            compact
-                            onInspect={() => inspectMinion(m)}
-                            onClick={() => {
-                              if (selectedHand) playHand(selectedHand, i);
-                            }}
-                          />
-                        </Draggable>
-                      ) : (
-                        <button
-                          type="button"
-                          className="slot-hit"
-                          aria-label={`空位 ${i + 1}`}
+          <section className="table-row board-row">
+            <div className="row-cards">
+              {Array.from({ length: MAX_BOARD }).map((_, i) => {
+                const m = you.board[i];
+                return (
+                  <Droppable
+                    key={m?.uid ?? `slot-${i}`}
+                    id={`board:${i}`}
+                    className={cn("slot table-slot", m && "is-filled", selectedHand && !m && "is-play")}
+                  >
+                    {m ? (
+                      <Draggable from="board" {...preview(m)}>
+                        <MinionCard
+                          inst={m}
+                          size="md"
+                          compact
+                          onInspect={() => inspectMinion(m)}
                           onClick={() => {
                             if (selectedHand) playHand(selectedHand, i);
                           }}
                         />
-                      )}
-                    </Droppable>
+                      </Draggable>
+                    ) : (
+                      <button
+                        type="button"
+                        className="slot-hit"
+                        aria-label={`空位 ${i + 1}`}
+                        onClick={() => {
+                          if (selectedHand) playHand(selectedHand, i);
+                        }}
+                      />
+                    )}
+                  </Droppable>
+                );
+              })}
+            </div>
+          </section>
+
+          <div className="you-row">
+            {power && (
+              <button
+                type="button"
+                className={cn("desk-glyph hero-power-desk", you.powerUsed && "is-used")}
+                disabled={!canCast}
+                onClick={usePower}
+                title={you.powerUsed ? "本回合已使用" : power.text}
+              >
+                <Sparkles className="size-4" />
+                <span>{you.powerUsed ? "已用" : power.cost}</span>
+              </button>
+            )}
+            <YouPortrait art={hero?.art ?? "HERO_08"} name={you.name} hp={you.hp} armor={you.armor} />
+          </div>
+
+          <EndTurnButton ended={endedTurn} onEnd={endTurn} />
+
+          <div className={cn("hand-dock", handOpen && "is-open")}>
+            <button
+              type="button"
+              className="hand-toggle"
+              onClick={() => setHandOpen((v) => !v)}
+              aria-expanded={handOpen}
+            >
+              手牌 {you.hand.length}/{MAX_HAND}
+            </button>
+            {handOpen && (
+              <div className="hand-tray">
+                {you.hand.length === 0 && <p className="empty-row">把商店拖到英雄上购买</p>}
+                {you.hand.map((m) => {
+                  const p = preview(m);
+                  return (
+                    <Draggable key={m.uid} from="hand" uid={m.uid} name={p.name} art={p.art} atk={p.atk} hp={p.hp}>
+                      <MinionCard
+                        inst={m}
+                        size="sm"
+                        compact
+                        selected={selectedHand === m.uid}
+                        onInspect={() => inspectMinion(m)}
+                        onClick={() => selectHand(selectedHand === m.uid ? null : m.uid)}
+                      />
+                    </Draggable>
                   );
                 })}
               </div>
-            </section>
-
-            <section className="table-row hand-row">
-              <Droppable id="hand" className={cn("row-cards hand-drop", you.hand.length === 0 && "is-empty")}>
-                {you.hand.map((m) => (
-                  <Draggable
-                    key={m.uid}
-                    from="hand"
-                    uid={m.uid}
-                    name={defOf(m.defId).name}
-                    art={defOf(m.defId).art}
-                    atk={m.atk}
-                    hp={m.hp}
-                  >
-                    <MinionCard
-                      inst={m}
-                      size="sm"
-                      compact
-                      selected={selectedHand === m.uid}
-                      onInspect={() => inspectMinion(m)}
-                      onClick={() => selectHand(selectedHand === m.uid ? null : m.uid)}
-                    />
-                  </Draggable>
-                ))}
-              </Droppable>
-            </section>
+            )}
           </div>
         </div>
 

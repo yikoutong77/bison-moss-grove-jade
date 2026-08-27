@@ -38,6 +38,7 @@ export function CombatBoard({
   floats,
   onInspect,
   mid,
+  head,
   foot,
 }: {
   player: CombatMinion[];
@@ -50,6 +51,7 @@ export function CombatBoard({
   floats: FloatNum[];
   onInspect?: (m: CombatMinion) => void;
   mid?: ReactNode;
+  head?: ReactNode;
   foot?: ReactNode;
 }) {
   const refs = useRef(new Map<string, HTMLElement>());
@@ -145,6 +147,7 @@ export function CombatBoard({
 
   return (
     <div ref={fieldRef} className="combat-field">
+      {head}
       {renderRow(enemy, "enemy")}
       {mid}
       {renderRow(player, "player")}
