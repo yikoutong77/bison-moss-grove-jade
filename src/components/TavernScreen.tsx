@@ -4,12 +4,28 @@ import { LobbyStrip } from "./LobbyStrip";
 import { MinionCard } from "./MinionCard";
 import { MinionInspect } from "./MinionInspect";
 import { BurningRope } from "./BurningRope";
-import { Draggable, Droppable, TableDragProvider, type DragPayload } from "./table-drag";
+import { Draggable, Droppable, TableDragProvider, useTableDrag, type DragPayload } from "./table-drag";
 import { useGame } from "@/game/store";
 import { MAX_BOARD, MAX_HAND, TRIBE_LABEL, defOf } from "@/game/minions";
 import { buyCost, upgradeCostNow } from "@/game/engine";
 import { HERO_BY_ID, heroArt } from "@/game/heroes";
 import { cn } from "@/lib/utils";
+
+function SellWell({ canClickSell, onSell }: { canClickSell: boolean; onSell: () => void }) {
+  const { drag } = useTableDrag();
+  const armed = Boolean(drag && (drag.from === "board" || drag.from === "hand")) || canClickSell;
+  return (
+    <Droppable id="sell" className={cn("bob-sell", armed && "is-armed")}>
+      <Coins className="size-4 text-gold" />
+      <span>{armed && drag ? "松手卖掉 +1" : "出售 +1"}</span>
+      {canClickSell && (
+        <button type="button" className="action-btn gold mt-1 w-full" onClick={onSell}>
+          卖掉选中
+        </button>
+      )}
+    </Droppable>
+  );
+}
 
 export function TavernScreen() {
   const you = useGame((s) => s.players.find((p) => p.id === s.youId));
@@ -87,19 +103,10 @@ export function TavernScreen() {
               <div className="bob-name font-display">鲍勃</div>
               <p className="bob-hint">拖到这里卖掉</p>
             </div>
-            <Droppable id="sell" className="bob-sell">
-              <Coins className="size-4 text-gold" />
-              <span>出售 +1</span>
-              {(selectedBoard || selectedHand) && (
-                <button
-                  type="button"
-                  className="action-btn gold mt-1 w-full"
-                  onClick={() => sell(selectedBoard ?? selectedHand!)}
-                >
-                  卖掉选中
-                </button>
-              )}
-            </Droppable>
+            <SellWell
+              canClickSell={Boolean(selectedBoard || selectedHand)}
+              onSell={() => sell(selectedBoard ?? selectedHand!)}
+            />
             <button type="button" className="action-btn bob-btn" disabled={endedTurn || you.gold < 1} onClick={refresh}>
               <RefreshCw className="size-3.5" />
               刷新 · 1
@@ -131,7 +138,15 @@ export function TavernScreen() {
               <div className="row-cards">
                 {you.shop.length === 0 && <p className="empty-row">刷新寻找随从</p>}
                 {you.shop.map((m) => (
-                  <Draggable key={m.uid} from="shop" uid={m.uid}>
+                  <Draggable
+                    key={m.uid}
+                    from="shop"
+                    uid={m.uid}
+                    name={defOf(m.defId).name}
+                    art={defOf(m.defId).art}
+                    atk={m.atk}
+                    hp={m.hp}
+                  >
                     <MinionCard
                       inst={m}
                       size="md"
@@ -165,7 +180,14 @@ export function TavernScreen() {
                       className={cn("slot table-slot", selectedHand && !m && "ring-2 ring-gold/60")}
                     >
                       {m ? (
-                        <Draggable from="board" uid={m.uid}>
+                        <Draggable
+                          from="board"
+                          uid={m.uid}
+                          name={defOf(m.defId).name}
+                          art={defOf(m.defId).art}
+                          atk={m.atk}
+                          hp={m.hp}
+                        >
                           <MinionCard
                             inst={m}
                             size="md"
@@ -209,7 +231,15 @@ export function TavernScreen() {
               <Droppable id="hand" className="row-cards hand-drop">
                 {you.hand.length === 0 && <p className="empty-row">拖酒馆随从到这里购买，或点一下直接买</p>}
                 {you.hand.map((m) => (
-                  <Draggable key={m.uid} from="hand" uid={m.uid}>
+                  <Draggable
+                    key={m.uid}
+                    from="hand"
+                    uid={m.uid}
+                    name={defOf(m.defId).name}
+                    art={defOf(m.defId).art}
+                    atk={m.atk}
+                    hp={m.hp}
+                  >
                     <MinionCard
                       inst={m}
                       size="sm"

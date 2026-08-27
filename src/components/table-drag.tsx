@@ -8,13 +8,19 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
+import { artUrl } from "@/game/minions";
 
 export type DragFrom = "shop" | "hand" | "board";
 
 export interface DragPayload {
   uid: string;
   from: DragFrom;
+  name?: string;
+  art?: string;
+  atk?: number;
+  hp?: number;
 }
 
 interface DragLive extends DragPayload {
@@ -34,6 +40,10 @@ export function useTableDrag() {
   const ctx = useContext(TableDragCtx);
   if (!ctx) throw new Error("useTableDrag outside provider");
   return ctx;
+}
+
+export function useOptionalTableDrag() {
+  return useContext(TableDragCtx);
 }
 
 export function TableDragProvider({
@@ -73,7 +83,11 @@ export function TableDragProvider({
       if (!draggingRef.current) {
         if (Math.hypot(dx, dy) < 8) return;
         draggingRef.current = true;
-        target.setPointerCapture(ev.pointerId);
+        try {
+          target.setPointerCapture(ev.pointerId);
+        } catch {
+          /* ignore */
+        }
       }
       setDrag({ ...start.payload, x: ev.clientX, y: ev.clientY });
       setOver(hitDrop(ev.clientX, ev.clientY));
@@ -103,18 +117,28 @@ export function TableDragProvider({
   }, []);
 
   const value = useMemo(() => ({ drag, begin, over }), [drag, begin, over]);
+  const verb = drag?.from === "shop" ? "购买" : drag?.from === "hand" ? "上场" : "移动";
 
   return (
     <TableDragCtx.Provider value={value}>
       {children}
-      {drag && (
-        <div
-          className="drag-ghost"
-          style={{ left: drag.x, top: drag.y }}
-        >
-          {drag.from === "shop" ? "购买" : drag.from === "hand" ? "上场" : "移动"}
-        </div>
-      )}
+      {drag &&
+        createPortal(
+          <div className="drag-ghost" style={{ left: drag.x, top: drag.y }}>
+            {drag.art ? (
+              <div className="drag-ghost-face">
+                <img src={artUrl(drag.art)} alt="" draggable={false} />
+                <span className="drag-ghost-stats">
+                  {drag.atk}/{drag.hp}
+                </span>
+              </div>
+            ) : (
+              <span>{verb}</span>
+            )}
+            <span className="drag-ghost-tag">{over === "sell" ? "卖掉" : verb}</span>
+          </div>,
+          document.body,
+        )}
     </TableDragCtx.Provider>
   );
 }
@@ -122,11 +146,19 @@ export function TableDragProvider({
 export function Draggable({
   from,
   uid,
+  name,
+  art,
+  atk,
+  hp,
   className,
   children,
 }: {
   from: DragFrom;
   uid: string;
+  name?: string;
+  art?: string;
+  atk?: number;
+  hp?: number;
   className?: string;
   children: ReactNode;
 }) {
@@ -134,7 +166,7 @@ export function Draggable({
   return (
     <div
       className={cn(className, drag?.uid === uid && "is-lifting")}
-      onPointerDown={(e) => begin({ from, uid }, e)}
+      onPointerDown={(e) => begin({ from, uid, name, art, atk, hp }, e)}
       style={{ touchAction: "none" }}
     >
       {children}

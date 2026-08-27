@@ -3,6 +3,8 @@ type Tone = { f: number; t: number; d: number; type?: OscillatorType; g?: number
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let muted = false;
+let bgmLevel = 0.22;
+let sfxLevel = 0.5;
 
 export type BgmId = "menu" | "tavern" | "combat";
 
@@ -12,7 +14,13 @@ const TRACKS: Record<BgmId, string> = {
   combat: "/audio/combat.mp3",
 };
 
-const BGM_VOL = 0.34;
+function sfxGain() {
+  return muted ? 0 : sfxLevel * 0.4;
+}
+
+function bgmGain() {
+  return muted ? 0 : bgmLevel;
+}
 
 type Slot = {
   el: HTMLAudioElement;
@@ -29,7 +37,7 @@ export function unlockAudio() {
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     ctx = new AC({ latencyHint: "interactive" });
     master = ctx.createGain();
-    master.gain.value = 0.22;
+    master.gain.value = sfxGain();
     master.connect(ctx.destination);
   }
   if (ctx.state === "suspended") void ctx.resume();
@@ -38,18 +46,48 @@ export function unlockAudio() {
 
 export function setMuted(v: boolean) {
   muted = v;
-  try {
-    localStorage.setItem("tavern-muted", v ? "1" : "0");
-  } catch {
-    /* ignore */
-  }
-  if (master && ctx) master.gain.setTargetAtTime(v ? 0 : 0.22, ctx.currentTime, 0.02);
+  persist();
+  if (master && ctx) master.gain.setTargetAtTime(sfxGain(), ctx.currentTime, 0.02);
   if (!current) return;
   if (v) {
     current.el.pause();
   } else {
-    current.el.volume = BGM_VOL;
+    current.el.volume = bgmGain();
     void current.el.play().catch(() => {});
+  }
+}
+
+export function setBgmLevel(n: number) {
+  bgmLevel = clamp01(n);
+  persist();
+  if (current && !muted) current.el.volume = bgmGain();
+}
+
+export function setSfxLevel(n: number) {
+  sfxLevel = clamp01(n);
+  persist();
+  if (master && ctx) master.gain.setTargetAtTime(sfxGain(), ctx.currentTime, 0.02);
+}
+
+export function getBgmLevel() {
+  return bgmLevel;
+}
+
+export function getSfxLevel() {
+  return sfxLevel;
+}
+
+function clamp01(n: number) {
+  return Math.max(0, Math.min(1, n));
+}
+
+function persist() {
+  try {
+    localStorage.setItem("tavern-muted", muted ? "1" : "0");
+    localStorage.setItem("tavern-bgm", String(bgmLevel));
+    localStorage.setItem("tavern-sfx", String(sfxLevel));
+  } catch {
+    /* ignore */
   }
 }
 
@@ -59,6 +97,10 @@ export function isMuted() {
 
 export function restoreMute(): boolean {
   try {
+    const b = Number(localStorage.getItem("tavern-bgm"));
+    const s = Number(localStorage.getItem("tavern-sfx"));
+    if (Number.isFinite(b) && b >= 0) bgmLevel = clamp01(b);
+    if (Number.isFinite(s) && s >= 0) sfxLevel = clamp01(s);
     if (localStorage.getItem("tavern-muted") === "1") {
       muted = true;
       return true;
@@ -117,7 +159,7 @@ function fadeOutThenDrop(s: Slot, ms: number) {
 
 function fadeIn(s: Slot, ms: number) {
   clearTimer(s);
-  const target = muted ? 0 : BGM_VOL;
+  const target = bgmGain();
   const startVol = s.el.volume;
   const t0 = performance.now();
   s.timer = window.setInterval(() => {

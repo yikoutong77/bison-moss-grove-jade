@@ -29,7 +29,7 @@ import {
 } from "./engine";
 import { createRng, shuffle, uid, type Rng } from "./rng";
 import { HEROES, HERO_BY_ID } from "./heroes";
-import { sfx, unlockAudio, setMuted as setAudioMuted } from "./audio";
+import { sfx, unlockAudio, setMuted as setAudioMuted, setBgmLevel, setSfxLevel, getBgmLevel, getSfxLevel } from "./audio";
 import { connect, disconnect, send } from "@/net/client";
 import type { ClientMsg, SeatView, ServerMsg, Snapshot } from "@/net/protocol";
 
@@ -50,6 +50,8 @@ interface GameState {
   discover: MinionInst[];
   toast: string | null;
   muted: boolean;
+  bgmVol: number;
+  sfxVol: number;
   speed: CombatSpeed;
   nextPlace: number;
   lastOpponent: string | null;
@@ -92,6 +94,8 @@ interface GameActions {
   continueFromResult: () => void;
   pickDiscover: (defId: string) => void;
   setMuted: (v: boolean) => void;
+  setBgmVol: (n: number) => void;
+  setSfxVol: (n: number) => void;
   setSpeed: (s: CombatSpeed) => void;
   setHelp: (v: boolean) => void;
   setToast: (t: string | null) => void;
@@ -180,6 +184,8 @@ export const useGame = create<GameState & GameActions>((set, get) => {
   discover: [],
   toast: null,
   muted: false,
+  bgmVol: 0.22,
+  sfxVol: 0.5,
   speed: 1,
   nextPlace: 8,
   lastOpponent: null,
@@ -258,6 +264,14 @@ export const useGame = create<GameState & GameActions>((set, get) => {
   setMuted: (v) => {
     set({ muted: v });
     setAudioMuted(v);
+  },
+  setBgmVol: (n) => {
+    setBgmLevel(n);
+    set({ bgmVol: n });
+  },
+  setSfxVol: (n) => {
+    setSfxLevel(n);
+    set({ sfxVol: n });
   },
 
   buy: (uid) => {

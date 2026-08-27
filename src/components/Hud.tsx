@@ -1,5 +1,5 @@
 import { Coins, Heart, Layers, Shield, Volume2, VolumeX, CircleHelp, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGame } from "@/game/store";
 import { HERO_BY_ID, heroArt } from "@/game/heroes";
 import { canUseHeroPower } from "@/game/engine";
@@ -33,8 +33,6 @@ export function Hud({ compact = false }: { compact?: boolean }) {
   const turn = useGame((s) => s.turn);
   const phase = useGame((s) => s.phase);
   const you = useGame((s) => s.players.find((p) => p.id === s.youId));
-  const muted = useGame((s) => s.muted);
-  const setMuted = useGame((s) => s.setMuted);
   const setHelp = useGame((s) => s.setHelp);
   const usePower = useGame((s) => s.usePower);
   if (!you) return null;
@@ -100,18 +98,75 @@ export function Hud({ compact = false }: { compact?: boolean }) {
             </span>
           </div>
         )}
-        <button
-          type="button"
-          className="hud-chip"
-          onClick={() => setMuted(!muted)}
-          aria-label={muted ? "打开声音" : "静音"}
-        >
-          {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
-        </button>
+        <VolumeMixer />
         <button type="button" className="hud-chip" onClick={() => setHelp(true)} aria-label="帮助">
           <CircleHelp className="size-4" />
         </button>
       </div>
     </header>
+  );
+}
+
+function VolumeMixer() {
+  const muted = useGame((s) => s.muted);
+  const setMuted = useGame((s) => s.setMuted);
+  const bgmVol = useGame((s) => s.bgmVol);
+  const sfxVol = useGame((s) => s.sfxVol);
+  const setBgmVol = useGame((s) => s.setBgmVol);
+  const setSfxVol = useGame((s) => s.setSfxVol);
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const hide = (e: PointerEvent) => {
+      if (box.current && !box.current.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener("pointerdown", hide);
+    return () => window.removeEventListener("pointerdown", hide);
+  }, [open]);
+  return (
+    <div ref={box} className="volume-mixer">
+      <button
+        type="button"
+        className="hud-chip"
+        onClick={() => setOpen((v) => !v)}
+        aria-label={muted ? "打开声音" : "音量"}
+      >
+        {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
+      </button>
+      {open && (
+        <div className="volume-pop">
+          <button type="button" className="volume-mute" onClick={() => setMuted(!muted)}>
+            {muted ? "取消静音" : "静音"}
+          </button>
+          <label>
+            音乐
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round(bgmVol * 100)}
+              onChange={(e) => {
+                setMuted(false);
+                setBgmVol(Number(e.target.value) / 100);
+              }}
+            />
+          </label>
+          <label>
+            音效
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round(sfxVol * 100)}
+              onChange={(e) => {
+                setMuted(false);
+                setSfxVol(Number(e.target.value) / 100);
+              }}
+            />
+          </label>
+        </div>
+      )}
+    </div>
   );
 }

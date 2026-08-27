@@ -8,7 +8,7 @@ import { CombatScreen } from "./CombatScreen";
 import { GameOverScreen } from "./GameOverScreen";
 import { HelpOverlay } from "./HelpOverlay";
 import { FightReplay } from "./FightReplay";
-import { unlockAudio, playBgm, restoreMute } from "@/game/audio";
+import { unlockAudio, playBgm, restoreMute, getBgmLevel, getSfxLevel } from "@/game/audio";
 import { onServer } from "@/net/client";
 
 export default function GameSession() {
@@ -18,7 +18,11 @@ export default function GameSession() {
   const applyNet = useGame((s) => s.applyNet);
 
   useEffect(() => {
-    if (restoreMute()) useGame.getState().setMuted(true);
+    const muted = restoreMute();
+    const g = useGame.getState();
+    g.setBgmVol(getBgmLevel());
+    g.setSfxVol(getSfxLevel());
+    if (muted) g.setMuted(true);
     const unlock = () => unlockAudio();
     window.addEventListener("pointerdown", unlock, { once: true });
     const vis = () => {

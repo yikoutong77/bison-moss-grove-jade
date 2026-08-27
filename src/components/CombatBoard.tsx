@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 interface Strike {
   uid: string;
+  hitUid: string;
   x: number;
   y: number;
 }
@@ -13,10 +14,17 @@ interface Strike {
 function measureDelta(from: HTMLElement, to: HTMLElement) {
   const a = from.getBoundingClientRect();
   const b = to.getBoundingClientRect();
-  return {
-    x: (b.left + b.width / 2 - (a.left + a.width / 2)) * 0.88,
-    y: (b.top + b.height / 2 - (a.top + a.height / 2)) * 0.88,
-  };
+  const dvx = b.left + b.width / 2 - (a.left + a.width / 2);
+  const dvy = b.top + b.height / 2 - (a.top + a.height / 2);
+  const rotated = document.documentElement.classList.contains("is-portrait");
+  const x = rotated ? dvy : dvx;
+  const y = rotated ? -dvx : dvy;
+  return { x, y };
+}
+
+function setVec(el: HTMLElement, prefix: "s" | "w" | "k", x: number, y: number) {
+  el.style.setProperty(`--${prefix}x`, `${x}px`);
+  el.style.setProperty(`--${prefix}y`, `${y}px`);
 }
 
 export function CombatBoard({
@@ -65,11 +73,26 @@ export function CombatBoard({
       return;
     }
     const { x, y } = measureDelta(from, to);
-    setStrike({ uid: attacking, x, y });
+    setVec(from, "s", x, y);
+    setVec(from, "w", -x * 0.12, -y * 0.12);
+    setVec(to, "k", x * 0.16, y * 0.16);
+    setStrike({ uid: attacking, hitUid: hit, x, y });
+  }, [attacking, hit, strikeId]);
+
+  useLayoutEffect(() => {
+    if (!strike) return;
+    const from = refs.current.get(strike.uid);
+    if (!from) return;
     from.style.animation = "none";
     void from.offsetWidth;
     from.style.removeProperty("animation");
-  }, [attacking, hit, strikeId]);
+    const to = refs.current.get(strike.hitUid);
+    if (to) {
+      to.style.animation = "none";
+      void to.offsetWidth;
+      to.style.removeProperty("animation");
+    }
+  }, [strikeId, strike]);
 
   useLayoutEffect(() => {
     const el = fieldRef.current;
@@ -101,20 +124,12 @@ export function CombatBoard({
               isHit && "is-impact",
               isHit && hitKind && `kind-${hitKind}`,
             )}
-            style={
-              s
-                ? {
-                    ["--sx" as string]: `${s.x}px`,
-                    ["--sy" as string]: `${s.y}px`,
-                  }
-                : undefined
-            }
           >
             <MinionCard
               inst={m}
               size="sm"
               compact
-              attacking={isAtk && !s}
+              attacking={false}
               hit={false}
               dead={m.dead || m.hp <= 0}
               lunge={side === "player" ? "up" : "down"}

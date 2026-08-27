@@ -3,6 +3,7 @@ import { Snowflake, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CombatMinion, MinionInst } from "@/game/types";
 import { KEYWORD_LABEL, artUrl, defOf } from "@/game/minions";
+import { useOptionalTableDrag } from "./table-drag";
 
 type Size = "sm" | "md" | "lg";
 
@@ -69,6 +70,18 @@ export function MinionCard({
   useEffect(() => {
     setArtBroken(false);
   }, [art]);
+  const hold = useRef<number | null>(null);
+  const didInspect = useRef(false);
+  const clearHold = () => {
+    if (hold.current) {
+      window.clearTimeout(hold.current);
+      hold.current = null;
+    }
+  };
+  const dragging = useOptionalTableDrag()?.drag;
+  useEffect(() => {
+    if (dragging) clearHold();
+  }, [dragging]);
   const prevShield = useRef(shield);
   const [shieldBreak, setShieldBreak] = useState(false);
   useEffect(() => {
@@ -88,16 +101,6 @@ export function MinionCard({
       : size === "sm"
         ? "w-[4.4rem] sm:w-[5.2rem]"
         : "w-[5.1rem] sm:w-[6.1rem]";
-
-  const hold = useRef<number | null>(null);
-  const didInspect = useRef(false);
-
-  const clearHold = () => {
-    if (hold.current) {
-      window.clearTimeout(hold.current);
-      hold.current = null;
-    }
-  };
 
   return (
     <button
@@ -142,7 +145,40 @@ export function MinionCard({
         dim && "opacity-50",
       )}
     >
-      {taunt && <div className="kw-taunt" aria-hidden />}
+      {taunt && (
+        <svg className="kw-taunt" viewBox="0 0 100 124" aria-hidden>
+          <defs>
+            <linearGradient id={`tw-${inst.uid}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#8a6238" />
+              <stop offset="45%" stopColor="#5a3a1c" />
+              <stop offset="100%" stopColor="#2e1a0c" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M50 5 L91 22 C95 58 84 96 50 118 C16 96 5 58 9 22 Z"
+            fill={`url(#tw-${inst.uid})`}
+            stroke="#1c1008"
+            strokeWidth="3.2"
+          />
+          <path
+            d="M50 14 L82 26 C85 56 76 88 50 106 C24 88 15 56 18 26 Z"
+            fill="none"
+            stroke="#c4a06a"
+            strokeWidth="1.4"
+            opacity="0.55"
+          />
+          <circle cx="50" cy="20" r="3.2" fill="#d8c090" stroke="#2a1608" strokeWidth="1" />
+          <circle cx="22" cy="48" r="2.6" fill="#d8c090" stroke="#2a1608" strokeWidth="1" />
+          <circle cx="78" cy="48" r="2.6" fill="#d8c090" stroke="#2a1608" strokeWidth="1" />
+          <circle cx="32" cy="92" r="2.4" fill="#c4a06a" stroke="#2a1608" strokeWidth="1" />
+          <circle cx="68" cy="92" r="2.4" fill="#c4a06a" stroke="#2a1608" strokeWidth="1" />
+        </svg>
+      )}
+      {(shield || shieldBreak) && (
+        <div className={cn("kw-bubble", shieldBreak && "is-break")} aria-hidden>
+          <span className="kw-bubble-shine" />
+        </div>
+      )}
       <div className="minion-face">
         <img
           src={artUrl(art)}
@@ -156,9 +192,6 @@ export function MinionCard({
         {artBroken && <div className="minion-silhouette" aria-hidden />}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-bg-deep to-transparent" />
         {frozen && <div className="frost-sheet" />}
-        {(shield || shieldBreak) && (
-          <div className={cn("kw-bubble", shieldBreak && "is-break")} aria-hidden />
-        )}
         <div className="minion-tier">{d.tier}</div>
         {golden && (
           <Sparkles className="absolute left-1 bottom-8 size-3.5 text-gold-2" strokeWidth={2} />
@@ -185,8 +218,14 @@ export function MinionCard({
         {reborn && (
           <span className="kw-mark kw-reborn" title="复生">
             <svg viewBox="0 0 16 16" className="size-full" aria-hidden>
-              <path d="M3 14 V7 L8 3 L13 7 V14 Z" fill="currentColor" />
-              <rect x="7" y="9" width="2" height="5" fill="#1a120c" />
+              <path
+                d="M4.2 14 V7.2 C4.2 4.2 5.7 2.6 8 2.6 C10.3 2.6 11.8 4.2 11.8 7.2 V14 Z"
+                fill="#d4cdc0"
+                stroke="#3a3228"
+                strokeWidth="1.1"
+              />
+              <rect x="3" y="13.1" width="10" height="1.8" rx="0.35" fill="#9a9080" stroke="#3a3228" strokeWidth="0.6" />
+              <path d="M8 5.4 V10.2 M6.4 7 H9.6" stroke="#4a4034" strokeWidth="1.15" strokeLinecap="round" />
             </svg>
           </span>
         )}
