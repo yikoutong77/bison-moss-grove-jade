@@ -5,6 +5,8 @@ export type Tribe =
   | "demon"
   | "dragon"
   | "pirate"
+  | "undead"
+  | "quilboar"
   | "neutral";
 
 export type Keyword =
@@ -51,7 +53,8 @@ export type Effect =
   | { kind: "overkill_buff_self"; atk: number; hp: number }
   | { kind: "avenge_buff_self"; count: number; atk: number; hp: number }
   | { kind: "baron" }
-  | { kind: "brann" };
+  | { kind: "brann" }
+  | { kind: "give_gems"; count: number; when?: "battlecry" | "end_turn" | "both" };
 
 export interface MinionDef {
   id: string;
@@ -65,6 +68,7 @@ export interface MinionDef {
   effects: Effect[];
   text: string;
   token?: boolean;
+  gem?: boolean;
 }
 
 export interface MinionInst {
@@ -162,6 +166,7 @@ export interface CombatMinion {
   effects: Effect[];
   owner: Side;
   dead: boolean;
+  attacksMade?: number;
 }
 
 export type CombatCause =

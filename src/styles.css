@@ -133,7 +133,109 @@
   box-shadow: inset 0 0 0 999px rgb(126 180 201 / 0.14);
 }
 .minion-card.is-taunt {
-  border-color: color-mix(in oklab, var(--color-muted) 70%, #6b5b45);
+  border-color: #b08a4a;
+  box-shadow:
+    0 0 0 2px #3d2a12,
+    0 8px 18px rgb(0 0 0 / 0.38);
+}
+
+.kw-taunt {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  border: 4px solid #c4a060;
+  box-shadow: inset 0 0 0 2px #2b1c0c;
+}
+.kw-bubble {
+  pointer-events: none;
+  position: absolute;
+  inset: 7%;
+  z-index: 3;
+  border-radius: 50% 50% 46% 46%;
+  border: 2px solid rgb(186 228 255 / 0.88);
+  box-shadow:
+    0 0 14px rgb(110 200 255 / 0.55),
+    inset 0 0 12px rgb(180 230 255 / 0.28);
+  animation: bubble-pulse 1.8s ease-in-out infinite;
+}
+.kw-bubble.is-break {
+  animation: bubble-pop 360ms ease-out forwards;
+}
+.kw-mark {
+  pointer-events: none;
+  position: absolute;
+  z-index: 5;
+  width: 0.85rem;
+  height: 0.85rem;
+  filter: drop-shadow(0 1px 1px #000);
+}
+.minion-card.is-compact .kw-mark {
+  width: 0.72rem;
+  height: 0.72rem;
+}
+.kw-wind {
+  top: 1.15rem;
+  right: 0.2rem;
+  color: #9ad7ff;
+}
+.kw-wind.is-spent {
+  opacity: 0.45;
+}
+.kw-wind.is-done {
+  opacity: 0.18;
+}
+.kw-cleave {
+  left: 1.55rem;
+  bottom: 0.28rem;
+  color: #e8d4a0;
+}
+.kw-reborn {
+  left: 0.22rem;
+  bottom: 1.55rem;
+  color: #d8c49a;
+}
+.minion-card.is-compact .kw-reborn {
+  bottom: 1.32rem;
+}
+.minion-card.is-compact .kw-cleave {
+  left: 1.32rem;
+}
+.stat-orb.atk.is-poison {
+  background: #3d9a4a;
+  color: #ecffe8;
+  box-shadow: 0 0 8px rgb(80 200 90 / 0.55);
+}
+@keyframes bubble-pulse {
+  from {
+    opacity: 0.82;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+@keyframes bubble-pop {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  55% {
+    opacity: 0.7;
+    transform: scale(1.18);
+    filter: brightness(1.6);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kw-bubble {
+    animation: none;
+  }
 }
 .minion-card.is-attacking {
   z-index: 4;
@@ -808,5 +910,10 @@ input {
     animation: none;
   }
 }
+
+.minion-card.is-gem {
+  box-shadow: 0 0 0 1px #9b2c2c, 0 0 10px #9b2c2c88;
+}
+
 
 

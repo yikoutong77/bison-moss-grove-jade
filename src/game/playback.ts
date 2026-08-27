@@ -71,6 +71,10 @@ export function applyEvent(state: PlaybackState, ev: CombatEvent): PlaybackState
       next = { ...next, banner: ev.text, log: pushLog(next.log, ev.text) };
       break;
     case "attack":
+      next = applyPatch(next, ev.attackerUid, (m) => ({
+        ...m,
+        attacksMade: (m.attacksMade ?? 0) + 1,
+      }));
       next = {
         ...next,
         attacking: ev.attackerUid,

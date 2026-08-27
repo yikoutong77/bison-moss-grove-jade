@@ -52,6 +52,7 @@ export function toCombatMinion(m: MinionInst, owner: Side): CombatMinion {
     effects: d.effects.map((e) => ({ ...e })),
     owner,
     dead: false,
+    attacksMade: 0,
   };
 }
 

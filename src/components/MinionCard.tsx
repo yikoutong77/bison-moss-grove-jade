@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Snowflake, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CombatMinion, MinionInst } from "@/game/types";
@@ -42,12 +42,18 @@ export function MinionCard({
   compact,
 }: Props) {
   const d = defOf(inst.defId);
+  const gem = !isCombat(inst) && Boolean(d.gem);
   const name = isCombat(inst) ? inst.name : d.name;
   const art = isCombat(inst) ? inst.art : d.art;
   const golden = inst.golden;
   const frozen = "frozen" in inst && inst.frozen;
   const taunt = isCombat(inst) ? inst.taunt : inst.keywords.includes("taunt");
   const shield = isCombat(inst) ? inst.divineShield : inst.keywords.includes("divineShield");
+  const reborn = isCombat(inst) ? inst.reborn : inst.keywords.includes("reborn");
+  const windfury = isCombat(inst) ? inst.windfury : inst.keywords.includes("windfury");
+  const poisonous = isCombat(inst) ? inst.poisonous : inst.keywords.includes("poisonous");
+  const cleave = isCombat(inst) ? inst.cleave : inst.keywords.includes("cleave");
+  const attacksMade = isCombat(inst) ? inst.attacksMade ?? 0 : 0;
   const kws = isCombat(inst)
     ? ([
         inst.taunt && "taunt",
@@ -58,6 +64,18 @@ export function MinionCard({
         inst.windfury && "windfury",
       ].filter(Boolean) as Array<keyof typeof KEYWORD_LABEL>)
     : inst.keywords;
+
+  const prevShield = useRef(shield);
+  const [shieldBreak, setShieldBreak] = useState(false);
+  useEffect(() => {
+    if (prevShield.current && !shield) {
+      setShieldBreak(true);
+      const t = window.setTimeout(() => setShieldBreak(false), 380);
+      prevShield.current = shield;
+      return () => window.clearTimeout(t);
+    }
+    prevShield.current = shield;
+  }, [shield]);
 
   const w = compact
     ? "w-[var(--table-card)]"
@@ -110,6 +128,7 @@ export function MinionCard({
         w,
         compact && "is-compact",
         golden && "is-golden",
+        gem && "is-gem",
         selected && "is-selected",
         frozen && "is-frozen",
         taunt && "is-taunt",
@@ -133,28 +152,58 @@ export function MinionCard({
         />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-bg-deep to-transparent" />
         {frozen && <div className="frost-sheet" />}
+        {taunt && <div className="kw-taunt" aria-hidden />}
+        {(shield || shieldBreak) && (
+          <div className={cn("kw-bubble", shieldBreak && "is-break")} aria-hidden />
+        )}
         <div className="absolute left-1 top-1 rounded-sm bg-bg-deep/70 px-1 py-0.5 text-[0.6rem] font-semibold text-gold-2">
           {d.tier}
         </div>
         {golden && (
           <Sparkles className="absolute left-1 bottom-8 size-3.5 text-gold-2" strokeWidth={2} />
         )}
-        {shield && (
-          <span className="absolute right-1 top-5 size-2.5 rounded-full border border-gold-2 bg-shield/80" />
+        {windfury && (
+          <span
+            className={cn("kw-mark kw-wind", attacksMade >= 1 && "is-spent", attacksMade >= 2 && "is-done")}
+            title="风怒"
+          >
+            <svg viewBox="0 0 16 16" className="size-full" aria-hidden>
+              <path d="M2 5 L8 2 L8 8 Z" fill="currentColor" />
+              <path d="M8 11 L14 8 L8 14 Z" fill="currentColor" opacity="0.85" />
+            </svg>
+          </span>
+        )}
+        {cleave && (
+          <span className="kw-mark kw-cleave" title="顺劈">
+            <svg viewBox="0 0 16 16" className="size-full" aria-hidden>
+              <path d="M3 13 L13 3" stroke="currentColor" strokeWidth="2" />
+              <path d="M5 14 L14 5" stroke="currentColor" strokeWidth="2" />
+            </svg>
+          </span>
+        )}
+        {reborn && (
+          <span className="kw-mark kw-reborn" title="复生">
+            <svg viewBox="0 0 16 16" className="size-full" aria-hidden>
+              <path d="M3 14 V7 L8 3 L13 7 V14 Z" fill="currentColor" />
+              <rect x="7" y="9" width="2" height="5" fill="#1a120c" />
+            </svg>
+          </span>
         )}
         <div className="absolute inset-x-0 bottom-7 px-1">
           <div className="truncate text-center text-[0.68rem] font-semibold leading-tight text-fg drop-shadow">
             {name}
           </div>
-          <div className="mt-0.5 flex flex-wrap justify-center gap-0.5">
-            {kws.slice(0, 3).map((k) => (
-              <span key={k} className="kw-chip">
-                {KEYWORD_LABEL[k]}
-              </span>
-            ))}
-          </div>
+          {!compact && (
+            <div className="mt-0.5 flex flex-wrap justify-center gap-0.5">
+              {kws.slice(0, 3).map((k) => (
+                <span key={k} className="kw-chip">
+                  {KEYWORD_LABEL[k]}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-        <span className="stat-orb atk">{inst.atk}</span>
+        <span className={cn("stat-orb atk", poisonous && "is-poison")}>{inst.atk}</span>
         <span className="stat-orb hp">{inst.hp}</span>
         {showFreeze && onFreeze && (
           <span

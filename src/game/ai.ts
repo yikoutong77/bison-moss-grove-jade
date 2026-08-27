@@ -14,7 +14,7 @@ import {
   canUseHeroPower,
   type Pool,
 } from "./engine";
-import { BUY_COST, MAX_BOARD, MAX_HAND, REFRESH_COST, defOf, minionValue } from "./minions";
+import { BUY_COST, MAX_BOARD, MAX_HAND, REFRESH_COST, defOf, minionValue, isGem } from "./minions";
 import { HERO_BY_ID } from "./heroes";
 import type { Rng } from "./rng";
 
@@ -150,6 +150,15 @@ export function aiPlayTurn(player: PlayerState, pool: Pool, rng: Rng): PlayerSta
       }
     }
 
+    const gem = p.hand.find((m) => isGem(m));
+    if (gem && p.board.length) {
+      const res = playFromHand(p, gem.uid, rng.int(p.board.length), rng);
+      if (res.player !== p) {
+        p = res.player;
+        continue;
+      }
+    }
+
     if (p.hand.length && p.board.length < MAX_BOARD) {
       const next = p.hand[0]!;
       const res = playFromHand(p, next.uid, p.board.length, rng);
@@ -182,7 +191,7 @@ export function aiPlayTurn(player: PlayerState, pool: Pool, rng: Rng): PlayerSta
   }
 
   while (p.hand.length && p.board.length < MAX_BOARD) {
-    const next = p.hand[0]!;
+    const next = p.hand.find((m) => !isGem(m)) ?? p.hand[0]!;
     const res = playFromHand(p, next.uid, p.board.length, rng);
     if (res.player === p) break;
     p = res.player;
@@ -190,6 +199,13 @@ export function aiPlayTurn(player: PlayerState, pool: Pool, rng: Rng): PlayerSta
       const opts = pickDiscoverOptions(res.triple.sourceTier, rng);
       if (opts[0]) p = addDiscovered(p, opts[0].defId, rng);
     }
+  }
+  while (p.board.length) {
+    const gem = p.hand.find((m) => isGem(m));
+    if (!gem) break;
+    const res = playFromHand(p, gem.uid, rng.int(p.board.length), rng);
+    if (res.player === p) break;
+    p = res.player;
   }
 
   const tribe = dominantTribe(p);

@@ -22,6 +22,9 @@ import {
   UPGRADE_BASE,
   defOf,
   makeInst,
+  scaleN,
+  isGem,
+  buffMinion,
 } from "./minions";
 import { HEROES, HERO_BY_ID } from "./heroes";
 import type { Rng } from "./rng";
@@ -247,8 +250,18 @@ export function playFromHand(
 ): BuyResult {
   const i = player.hand.findIndex((m) => m.uid === handUid);
   if (i < 0) return { player };
-  if (player.board.length >= MAX_BOARD) return { player };
   const played = player.hand[i]!;
+  if (isGem(played)) {
+    if (player.board.length === 0) return { player };
+    const idx = Math.max(0, Math.min(slot, player.board.length - 1));
+    const target = player.board[idx]!;
+    const atk = scaleN(1, played.golden);
+    const hp = scaleN(1, played.golden);
+    const board = player.board.map((m) => (m.uid === target.uid ? buffMinion(m, atk, hp) : m));
+    const hand = player.hand.filter((m) => m.uid !== handUid);
+    return { player: { ...player, hand, board } };
+  }
+  if (player.board.length >= MAX_BOARD) return { player };
   const hand = player.hand.filter((m) => m.uid !== handUid);
   const idx = Math.max(0, Math.min(slot, player.board.length));
   let board = player.board.slice();
@@ -256,7 +269,23 @@ export function playFromHand(
   board = applyOnSummonBuffs(board, played);
   board = applyOnPlay(board, played);
   board = applyBattlecry(board, played, idx, rng, brannExtra(player.board));
-  return tryTriple({ ...player, hand, board });
+  let next = tryTriple({ ...player, hand, board });
+  const extra = 1 + brannExtra(player.board);
+  for (const fx of defOf(played.defId).effects) {
+    if (fx.kind === "give_gems" && fx.when !== "end_turn") {
+      next = { player: grantGems(next.player, scaleN(fx.count, played.golden) * extra), triple: next.triple };
+    }
+  }
+  return next;
+}
+
+function grantGems(player: PlayerState, count: number): PlayerState {
+  if (count <= 0) return player;
+  let hand = player.hand.slice();
+  for (let i = 0; i < count && hand.length < MAX_HAND; i++) {
+    hand.push(makeInst("bloodgem"));
+  }
+  return { ...player, hand };
 }
 
 export function tryTriple(player: PlayerState): BuyResult {
@@ -417,7 +446,15 @@ export function applyFightDamage(
 }
 
 export function finishTurnBoards(player: PlayerState, rng: Rng): PlayerState {
-  return { ...player, board: applyEndOfTurn(player.board, rng) };
+  let next: PlayerState = { ...player, board: applyEndOfTurn(player.board, rng) };
+  for (const m of next.board) {
+    for (const fx of defOf(m.defId).effects) {
+      if (fx.kind === "give_gems" && (fx.when === "end_turn" || fx.when === "both")) {
+        next = grantGems(next, scaleN(fx.count, m.golden));
+      }
+    }
+  }
+  return next;
 }
 
 export function recountAlive(players: PlayerState[]): PlayerState[] {
