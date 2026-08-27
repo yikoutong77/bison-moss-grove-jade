@@ -1,14 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FastForward, Pause, Play } from "lucide-react";
-import { MinionCard } from "./MinionCard";
 import { MinionInspect } from "./MinionInspect";
 import { LobbyStrip } from "./LobbyStrip";
 import { CombatTimeline } from "./CombatTimeline";
+import { CombatBoard } from "./CombatBoard";
 import { useGame } from "@/game/store";
 import { HERO_BY_ID, heroArt } from "@/game/heroes";
 import { lastEventIndexOfBeat } from "@/game/timeline";
 import { initialPlayback, replayTo, stepPlayback, type PlaybackState } from "@/game/playback";
-import type { CombatMinion } from "@/game/types";
 import { sfx } from "@/game/audio";
 import { cn } from "@/lib/utils";
 
@@ -177,39 +176,7 @@ export function CombatScreen() {
     return () => window.clearTimeout(t);
   }, [phase, combat, held, continueFromResult, online]);
 
-  const floatByUid = useMemo(() => {
-    const m = new Map<string, string>();
-    if (!view) return m;
-    for (const f of view.floats) m.set(f.uid, f.text);
-    return m;
-  }, [view]);
-
   if (!combat || !you || !view) return null;
-
-  const renderRow = (board: CombatMinion[], side: "player" | "enemy") => (
-    <div className="row-cards combat-row">
-      {board.map((m) => (
-        <div key={m.uid} className="relative">
-          <MinionCard
-            inst={m}
-            size="sm"
-            compact
-            attacking={view.attacking === m.uid}
-            hit={view.hit === m.uid}
-            dead={m.dead || m.hp <= 0}
-            lunge={side === "player" ? "up" : "down"}
-            onInspect={() => inspectMinion(m)}
-          />
-          {floatByUid.get(m.uid) && (
-            <span className="pointer-events-none absolute left-1/2 top-2 z-10 -translate-x-1/2 animate-[floatnum_700ms_ease_forwards] text-sm font-bold text-hp-fg">
-              {floatByUid.get(m.uid)}
-            </span>
-          )}
-        </div>
-      ))}
-      {board.length === 0 && <p className="empty-row">战场空空</p>}
-    </div>
-  );
 
   const bd = combat.breakdown;
 
@@ -260,19 +227,30 @@ export function CombatScreen() {
         </div>
       </div>
 
-      <div className="combat-field">
-        {renderRow(view.enemy, "enemy")}
-        <div className="combat-banner">
-          <span className="font-display text-sm text-gold-2">{view.banner}</span>
-        </div>
-        {renderRow(view.player, "player")}
-        <div className="flex items-center justify-center gap-2">
-          {youHero && (
-            <img src={heroArt(youHero.art)} alt="" className="size-7 rounded-full object-cover object-top" />
-          )}
-          <span className="text-xs text-muted">{you.name}</span>
-        </div>
-      </div>
+      <CombatBoard
+        player={view.player}
+        enemy={view.enemy}
+        attacking={view.attacking}
+        hit={view.hit}
+        hitKind={view.hitKind}
+        hitAmount={view.hitAmount}
+        strikeId={view.strikeId}
+        floats={view.floats}
+        onInspect={inspectMinion}
+        mid={
+          <div className="combat-banner">
+            <span className="font-display text-sm text-gold-2">{view.banner}</span>
+          </div>
+        }
+        foot={
+          <div className="flex items-center justify-center gap-2">
+            {youHero && (
+              <img src={heroArt(youHero.art)} alt="" className="size-7 rounded-full object-cover object-top" />
+            )}
+            <span className="text-xs text-muted">{you.name}</span>
+          </div>
+        }
+      />
 
       <div className="combat-timeline-wrap">
         <CombatTimeline

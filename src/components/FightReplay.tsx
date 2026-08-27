@@ -1,45 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FastForward, Pause, Play, X } from "lucide-react";
-import { MinionCard } from "./MinionCard";
+import { CombatBoard } from "./CombatBoard";
 import { CombatTimeline } from "./CombatTimeline";
 import { useGame } from "@/game/store";
 import { HERO_BY_ID, heroArt } from "@/game/heroes";
 import { lastEventIndexOfBeat } from "@/game/timeline";
 import { initialPlayback, replayTo, stepPlayback, type PlaybackState } from "@/game/playback";
-import type { CombatMinion } from "@/game/types";
 import { sfx } from "@/game/audio";
 import { cn } from "@/lib/utils";
-
-function renderRow(
-  board: CombatMinion[],
-  side: "player" | "enemy",
-  attacking: string | null,
-  hit: string | null,
-  floats: Map<string, string>,
-) {
-  return (
-    <div className="flex min-h-24 flex-wrap items-end justify-center gap-1.5">
-      {board.map((m) => (
-        <div key={m.uid} className="relative">
-          <MinionCard
-            inst={m}
-            size="sm"
-            attacking={attacking === m.uid}
-            hit={hit === m.uid}
-            dead={m.dead || m.hp <= 0}
-            lunge={side === "player" ? "up" : "down"}
-          />
-          {floats.get(m.uid) && (
-            <span className="pointer-events-none absolute left-1/2 top-2 z-10 -translate-x-1/2 animate-[floatnum_700ms_ease_forwards] text-sm font-bold text-hp-fg">
-              {floats.get(m.uid)}
-            </span>
-          )}
-        </div>
-      ))}
-      {board.length === 0 && <p className="py-5 text-sm text-muted">战场空空</p>}
-    </div>
-  );
-}
 
 export function FightReplay() {
   const record = useGame((s) => s.replay);
@@ -126,13 +94,6 @@ export function FightReplay() {
     return () => cancelAnimationFrame(raf);
   }, [record, paused, speed, events]);
 
-  const floats = useMemo(() => {
-    const m = new Map<string, string>();
-    if (!view) return m;
-    for (const f of view.floats) m.set(f.uid, f.text);
-    return m;
-  }, [view]);
-
   if (!record || !view) return null;
   const hero = record.oppHeroId ? HERO_BY_ID[record.oppHeroId] : undefined;
   const resultLabel =
@@ -168,9 +129,17 @@ export function FightReplay() {
         </div>
 
         <div className="mt-3 rounded-xl border border-border bg-surface/60 p-3">
-          {renderRow(view.enemy, "enemy", view.attacking, view.hit, floats)}
-          <p className="my-2 text-center font-display text-sm text-gold-2">{view.banner}</p>
-          {renderRow(view.player, "player", view.attacking, view.hit, floats)}
+          <CombatBoard
+            player={view.player}
+            enemy={view.enemy}
+            attacking={view.attacking}
+            hit={view.hit}
+            hitKind={view.hitKind}
+            hitAmount={view.hitAmount}
+            strikeId={view.strikeId}
+            floats={view.floats}
+            mid={<p className="my-2 text-center font-display text-sm text-gold-2">{view.banner}</p>}
+          />
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">

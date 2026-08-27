@@ -8,7 +8,7 @@ import { CombatScreen } from "./CombatScreen";
 import { GameOverScreen } from "./GameOverScreen";
 import { HelpOverlay } from "./HelpOverlay";
 import { FightReplay } from "./FightReplay";
-import { unlockAudio } from "@/game/audio";
+import { unlockAudio, playBgm, restoreMute } from "@/game/audio";
 import { onServer } from "@/net/client";
 
 export default function GameSession() {
@@ -18,6 +18,7 @@ export default function GameSession() {
   const applyNet = useGame((s) => s.applyNet);
 
   useEffect(() => {
+    if (restoreMute()) useGame.getState().setMuted(true);
     const unlock = () => unlockAudio();
     window.addEventListener("pointerdown", unlock, { once: true });
     const vis = () => {
@@ -29,6 +30,12 @@ export default function GameSession() {
       document.removeEventListener("visibilitychange", vis);
     };
   }, []);
+
+  useEffect(() => {
+    if (phase === "tavern" || phase === "discover") playBgm("tavern");
+    else if (phase === "matchup" || phase === "combat" || phase === "result") playBgm("combat");
+    else playBgm("menu");
+  }, [phase]);
 
   useEffect(() => onServer(applyNet), [applyNet]);
 

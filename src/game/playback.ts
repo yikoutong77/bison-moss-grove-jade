@@ -1,9 +1,12 @@
 import type { CombatEvent, CombatMinion } from "./types";
 
+export type HitKind = "normal" | "shield" | "poison" | "kill";
+
 export interface FloatNum {
   id: string;
   uid: string;
   text: string;
+  kind: HitKind;
 }
 
 export interface PlaybackState {
@@ -13,6 +16,9 @@ export interface PlaybackState {
   floats: FloatNum[];
   attacking: string | null;
   hit: string | null;
+  hitKind: HitKind | null;
+  hitAmount: number;
+  strikeId: number;
   log: string[];
   sfx: "hit" | "death" | null;
 }
@@ -29,6 +35,9 @@ export function initialPlayback(player: CombatMinion[], enemy: CombatMinion[]): 
     floats: [],
     attacking: null,
     hit: null,
+    hitKind: null,
+    hitAmount: 0,
+    strikeId: 0,
     log: [],
     sfx: null,
   };
@@ -79,11 +88,21 @@ export function applyEvent(state: PlaybackState, ev: CombatEvent): PlaybackState
         ...next,
         attacking: ev.attackerUid,
         hit: ev.targetUid,
+        hitKind: null,
+        hitAmount: 0,
+        strikeId: state.strikeId + 1,
         sfx: "hit",
         log: pushLog(next.log, line),
       };
       break;
-    case "damage":
+    case "damage": {
+      const kind: HitKind = ev.shieldPop
+        ? "shield"
+        : ev.cause === "poison"
+          ? "poison"
+          : ev.hpAfter <= 0
+            ? "kill"
+            : "normal";
       next = applyPatch(next, ev.uid, (m) => ({
         ...m,
         hp: ev.hpAfter,
@@ -92,17 +111,21 @@ export function applyEvent(state: PlaybackState, ev: CombatEvent): PlaybackState
       next = {
         ...next,
         hit: ev.amount > 0 || ev.shieldPop ? ev.uid : next.hit,
+        hitKind: kind,
+        hitAmount: ev.amount,
         floats: [
           ...next.floats.slice(-8),
           {
             id: `${ev.uid}-${ev.at}-${next.floats.length}`,
             uid: ev.uid,
             text: ev.shieldPop ? "圣盾" : `-${ev.amount}`,
+            kind,
           },
         ],
         log: pushLog(next.log, line),
       };
       break;
+    }
     case "buff":
       next = applyPatch(next, ev.uid, (m) => ({
         ...m,
@@ -148,6 +171,7 @@ export function applyEvent(state: PlaybackState, ev: CombatEvent): PlaybackState
         ...next,
         attacking: null,
         hit: null,
+        hitKind: null,
         banner: line || next.banner,
         log: pushLog(next.log, line),
       };

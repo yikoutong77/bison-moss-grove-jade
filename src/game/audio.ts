@@ -4,6 +4,19 @@ let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let muted = false;
 
+export type BgmId = "menu" | "tavern" | "combat";
+
+const TRACKS: Record<BgmId, string> = {
+  menu: "/audio/menu.mp3",
+  tavern: "/audio/tavern.mp3",
+  combat: "/audio/combat.mp3",
+};
+
+const BGM_VOL = 0.34;
+let bgmId: BgmId | null = null;
+let bgm: HTMLAudioElement | null = null;
+let fadeTimer = 0;
+
 export function unlockAudio() {
   if (!ctx) {
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -13,15 +26,95 @@ export function unlockAudio() {
     master.connect(ctx.destination);
   }
   if (ctx.state === "suspended") void ctx.resume();
+  if (bgm && !muted && bgm.paused) void bgm.play().catch(() => {});
 }
 
 export function setMuted(v: boolean) {
   muted = v;
+  try {
+    localStorage.setItem("tavern-muted", v ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
   if (master && ctx) master.gain.setTargetAtTime(v ? 0 : 0.22, ctx.currentTime, 0.02);
+  if (bgm) {
+    if (v) {
+      bgm.pause();
+    } else {
+      bgm.volume = BGM_VOL;
+      void bgm.play().catch(() => {});
+    }
+  }
 }
 
 export function isMuted() {
   return muted;
+}
+
+export function restoreMute(): boolean {
+  try {
+    if (localStorage.getItem("tavern-muted") === "1") {
+      muted = true;
+      return true;
+    }
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
+function fadeTo(el: HTMLAudioElement, target: number, ms: number, done?: () => void) {
+  window.clearInterval(fadeTimer);
+  const start = el.volume;
+  const t0 = performance.now();
+  fadeTimer = window.setInterval(() => {
+    const k = Math.min(1, (performance.now() - t0) / ms);
+    const v = start + (target - start) * k;
+    el.volume = Math.max(0, Math.min(1, v));
+    if (k >= 1) {
+      window.clearInterval(fadeTimer);
+      fadeTimer = 0;
+      done?.();
+    }
+  }, 40);
+}
+
+export function playBgm(id: BgmId) {
+  if (bgmId === id && bgm) {
+    if (!muted && bgm.paused) void bgm.play().catch(() => {});
+    return;
+  }
+  bgmId = id;
+  const next = new Audio(TRACKS[id]);
+  next.loop = true;
+  next.preload = "auto";
+  next.volume = 0;
+  const prev = bgm;
+  bgm = next;
+  const start = () => {
+    if (bgm !== next) return;
+    if (!muted) void next.play().catch(() => {});
+    fadeTo(next, muted ? 0 : BGM_VOL, 700);
+    if (prev) {
+      fadeTo(prev, 0, 500, () => {
+        prev.pause();
+        prev.src = "";
+      });
+    }
+  };
+  if (next.readyState >= 2) start();
+  else next.addEventListener("canplaythrough", start, { once: true });
+}
+
+export function stopBgm() {
+  bgmId = null;
+  if (!bgm) return;
+  const prev = bgm;
+  bgm = null;
+  fadeTo(prev, 0, 400, () => {
+    prev.pause();
+    prev.src = "";
+  });
 }
 
 function beep(tones: Tone[]) {

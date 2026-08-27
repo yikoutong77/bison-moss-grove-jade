@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Snowflake, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CombatMinion, MinionInst } from "@/game/types";
-import { KEYWORD_LABEL, TRIBE_LABEL, artUrl, defOf } from "@/game/minions";
+import { KEYWORD_LABEL, artUrl, defOf } from "@/game/minions";
 
 type Size = "sm" | "md" | "lg";
 
@@ -138,7 +138,7 @@ export function MinionCard({
         dim && "opacity-50",
       )}
     >
-      <div className="relative aspect-[3/4] overflow-hidden bg-surface-2">
+      <div className="minion-face">
         <img
           src={artUrl(art)}
           alt={name}
@@ -156,9 +156,7 @@ export function MinionCard({
         {(shield || shieldBreak) && (
           <div className={cn("kw-bubble", shieldBreak && "is-break")} aria-hidden />
         )}
-        <div className="absolute left-1 top-1 rounded-sm bg-bg-deep/70 px-1 py-0.5 text-[0.6rem] font-semibold text-gold-2">
-          {d.tier}
-        </div>
+        <div className="minion-tier">{d.tier}</div>
         {golden && (
           <Sparkles className="absolute left-1 bottom-8 size-3.5 text-gold-2" strokeWidth={2} />
         )}
@@ -189,13 +187,11 @@ export function MinionCard({
             </svg>
           </span>
         )}
-        <div className="absolute inset-x-0 bottom-7 px-1">
-          <div className="truncate text-center text-[0.68rem] font-semibold leading-tight text-fg drop-shadow">
-            {name}
-          </div>
-          {!compact && (
+        <div className="minion-caption">
+          <div className="minion-name">{name}</div>
+          {!compact && kws.length > 0 && (
             <div className="mt-0.5 flex flex-wrap justify-center gap-0.5">
-              {kws.slice(0, 3).map((k) => (
+              {kws.slice(0, 2).map((k) => (
                 <span key={k} className="kw-chip">
                   {KEYWORD_LABEL[k]}
                 </span>
@@ -203,8 +199,6 @@ export function MinionCard({
             </div>
           )}
         </div>
-        <span className={cn("stat-orb atk", poisonous && "is-poison")}>{inst.atk}</span>
-        <span className="stat-orb hp">{inst.hp}</span>
         {showFreeze && onFreeze && (
           <span
             role="button"
@@ -218,24 +212,17 @@ export function MinionCard({
               if (e.key === "Enter") onFreeze();
             }}
             className={cn(
-              "absolute right-1 top-1 grid size-7 place-items-center rounded-full border border-border bg-surface/85",
+              "absolute right-1 top-1 grid size-6 place-items-center rounded-full border border-border bg-surface/85",
               frozen && "border-ice bg-ice/25 text-ice",
             )}
             aria-label="冻结"
           >
-            <Snowflake className="size-3.5" />
+            <Snowflake className="size-3" />
           </span>
         )}
       </div>
-      {compact ? null : size === "lg" && d.text ? (
-        <p className="line-clamp-2 bg-surface px-1.5 py-1 text-[0.62rem] leading-snug text-muted">
-          {d.text}
-        </p>
-      ) : (
-        <p className="truncate bg-surface px-1 py-0.5 text-center text-[0.58rem] text-faint">
-          {TRIBE_LABEL[d.tribe]}
-        </p>
-      )}
+      <span className={cn("stat-orb atk", poisonous && "is-poison")}>{inst.atk}</span>
+      <span className="stat-orb hp">{inst.hp}</span>
     </button>
   );
 }
