@@ -294,6 +294,8 @@
 .combat-piece {
   position: relative;
   flex-shrink: 0;
+  --sx: 0px;
+  --sy: 0px;
 }
 .combat-piece.is-striking {
   z-index: 40;
@@ -344,19 +346,19 @@
 
 @keyframes strike-dash {
   0% {
-    transform: translate(0, 0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
   12% {
-    transform: translate(calc(var(--sx, 0px) * -0.1), calc(var(--sy, 0px) * -0.1)) scale(1.06);
+    transform: translate3d(calc(var(--sx) * -0.1), calc(var(--sy) * -0.1), 0) scale(1.06);
   }
   36% {
-    transform: translate(var(--sx, 0px), var(--sy, 0px)) scale(1.14);
+    transform: translate3d(var(--sx), var(--sy), 0) scale(1.14);
   }
   58% {
-    transform: translate(var(--sx, 0px), var(--sy, 0px)) scale(1.08);
+    transform: translate3d(var(--sx), var(--sy), 0) scale(1.08);
   }
   100% {
-    transform: translate(0, 0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 @keyframes impact-shake {
@@ -489,7 +491,6 @@
   border-radius: 50%;
   border: 1px dashed color-mix(in oklab, var(--color-gold) 40%, var(--color-border-strong));
   background: color-mix(in oklab, var(--color-bg-deep) 45%, transparent);
-}
 }
 
 .action-btn {
