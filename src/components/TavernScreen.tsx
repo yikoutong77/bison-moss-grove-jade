@@ -1,28 +1,56 @@
 import { RefreshCw, Snowflake, ArrowUpCircle, Flag, Coins, Eye } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Hud } from "./Hud";
 import { LobbyStrip } from "./LobbyStrip";
 import { MinionCard } from "./MinionCard";
 import { MinionInspect } from "./MinionInspect";
-import { BurningRope } from "./BurningRope";
 import { Draggable, Droppable, TableDragProvider, useTableDrag, type DragPayload } from "./table-drag";
 import { useGame } from "@/game/store";
-import { MAX_BOARD, MAX_HAND, TRIBE_LABEL, defOf } from "@/game/minions";
-import { buyCost, upgradeCostNow } from "@/game/engine";
+import { MAX_BOARD, defOf } from "@/game/minions";
+import { upgradeCostNow } from "@/game/engine";
 import { HERO_BY_ID, heroArt } from "@/game/heroes";
 import { cn } from "@/lib/utils";
 
-function SellWell({ canClickSell, onSell }: { canClickSell: boolean; onSell: () => void }) {
-  const { drag } = useTableDrag();
-  const armed = Boolean(drag && (drag.from === "board" || drag.from === "hand")) || canClickSell;
+function EndTurnButton({ ended, onEnd }: { ended: boolean; onEnd: () => void }) {
+  const endsAt = useGame((s) => s.tavernEndsAt);
+  const rope = useGame((s) => s.rope);
+  const [left, setLeft] = useState(0);
+  useEffect(() => {
+    if (!endsAt) {
+      setLeft(0);
+      return;
+    }
+    const tick = () => setLeft(Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
+    tick();
+    const id = window.setInterval(tick, 200);
+    return () => window.clearInterval(id);
+  }, [endsAt]);
+  const hot = Boolean(endsAt && (rope || left <= 15));
   return (
-    <Droppable id="sell" className={cn("bob-sell", armed && "is-armed")}>
-      <Coins className="size-4 text-gold" />
-      <span>{armed && drag ? "松手卖掉 +1" : "出售 +1"}</span>
-      {canClickSell && (
-        <button type="button" className="action-btn gold mt-1 w-full" onClick={onSell}>
-          卖掉选中
-        </button>
-      )}
+    <button
+      type="button"
+      className={cn("action-btn primary bob-btn end-turn", hot && "is-rope")}
+      disabled={ended}
+      onClick={onEnd}
+    >
+      <Flag className="size-3.5" />
+      {ended ? "等待" : "结束"}
+      {endsAt ? <span className="end-clock tabular">{left}s</span> : null}
+    </button>
+  );
+}
+
+function BobSeller({ gold }: { gold: number }) {
+  const { drag } = useTableDrag();
+  const selling = Boolean(drag && (drag.from === "board" || drag.from === "hand"));
+  return (
+    <Droppable id="sell" className={cn("bob-face", selling && "is-armed")}>
+      <div className="bob-name font-display">鲍勃</div>
+      <div className="bob-gold tabular">
+        <Coins className="size-3.5" />
+        {gold}
+      </div>
+      {selling && <span className="bob-sell-tip">卖掉 +1</span>}
     </Droppable>
   );
 }
@@ -30,8 +58,6 @@ function SellWell({ canClickSell, onSell }: { canClickSell: boolean; onSell: () 
 export function TavernScreen() {
   const you = useGame((s) => s.players.find((p) => p.id === s.youId));
   const players = useGame((s) => s.players);
-  const selectedShop = useGame((s) => s.selectedShop);
-  const selectedBoard = useGame((s) => s.selectedBoard);
   const selectedHand = useGame((s) => s.selectedHand);
   const buy = useGame((s) => s.buy);
   const buyToBoard = useGame((s) => s.buyToBoard);
@@ -39,11 +65,8 @@ export function TavernScreen() {
   const sell = useGame((s) => s.sell);
   const refresh = useGame((s) => s.refresh);
   const freezeAll = useGame((s) => s.freezeAll);
-  const freezeSlot = useGame((s) => s.freezeSlot);
   const upgrade = useGame((s) => s.upgrade);
   const endTurn = useGame((s) => s.endTurn);
-  const selectShop = useGame((s) => s.selectShop);
-  const selectBoard = useGame((s) => s.selectBoard);
   const selectHand = useGame((s) => s.selectHand);
   const move = useGame((s) => s.move);
   const toast = useGame((s) => s.toast);
@@ -59,17 +82,7 @@ export function TavernScreen() {
   if (!you) return null;
   const frozen = you.shop.some((m) => m.frozen);
   const scout = players.find((p) => p.id === scoutId);
-  const costBuy = buyCost(you);
   const costUp = upgradeCostNow(you);
-  const tribes = Object.entries(
-    you.board.reduce<Record<string, number>>((acc, m) => {
-      const t = TRIBE_LABEL[defOf(m.defId).tribe];
-      acc[t] = (acc[t] ?? 0) + 1;
-      return acc;
-    }, {}),
-  )
-    .map(([t, n]) => `${t}${n}`)
-    .join(" ");
 
   const onDrop = (payload: DragPayload, drop: string) => {
     if (drop === "sell") {
@@ -99,44 +112,31 @@ export function TavernScreen() {
 
         <div className="table-main">
           <aside className="bob-panel">
-            <div className="bob-face">
-              <div className="bob-name font-display">鲍勃</div>
-              <p className="bob-hint">拖到这里卖掉</p>
-            </div>
-            <SellWell
-              canClickSell={Boolean(selectedBoard || selectedHand)}
-              onSell={() => sell(selectedBoard ?? selectedHand!)}
-            />
-            <button type="button" className="action-btn bob-btn" disabled={endedTurn || you.gold < 1} onClick={refresh}>
+            <BobSeller gold={you.gold} />
+            <button type="button" className="action-btn bob-btn" disabled={endedTurn || you.gold < 1} onClick={refresh} title="刷新 1金">
               <RefreshCw className="size-3.5" />
-              刷新 · 1
+              1
             </button>
-            <button type="button" className={cn("action-btn bob-btn", frozen && "text-ice")} disabled={endedTurn} onClick={freezeAll}>
+            <button type="button" className={cn("action-btn bob-btn", frozen && "is-frozen")} disabled={endedTurn} onClick={freezeAll} title={frozen ? "解冻" : "冻结商店"}>
               <Snowflake className="size-3.5" />
-              {frozen ? "解冻" : "冻结"}
             </button>
             <button
               type="button"
               className="action-btn gold bob-btn"
               disabled={endedTurn || you.tavernTier >= 6 || you.gold < costUp}
               onClick={upgrade}
+              title={you.tavernTier >= 6 ? "酒馆满级" : `升级到 ${you.tavernTier + 1}`}
             >
               <ArrowUpCircle className="size-3.5" />
-              {you.tavernTier >= 6 ? "满级" : `升级 · ${costUp}`}
+              {you.tavernTier >= 6 ? "T6" : costUp}
             </button>
-            <button type="button" className="action-btn primary bob-btn end-turn" disabled={endedTurn} onClick={endTurn}>
-              <Flag className="size-3.5" />
-              {endedTurn ? "等待中" : "结束回合"}
-            </button>
+            <EndTurnButton ended={endedTurn} onEnd={endTurn} />
           </aside>
 
           <div className="table-field">
             <section className="table-row shop-row">
-              <div className="row-label">
-                酒馆 · {costBuy}金
-              </div>
               <div className="row-cards">
-                {you.shop.length === 0 && <p className="empty-row">刷新寻找随从</p>}
+                {you.shop.length === 0 && <p className="empty-row">刷新</p>}
                 {you.shop.map((m) => (
                   <Draggable
                     key={m.uid}
@@ -151,14 +151,8 @@ export function TavernScreen() {
                       inst={m}
                       size="md"
                       compact
-                      selected={selectedShop === m.uid}
-                      showFreeze
-                      onFreeze={() => freezeSlot(m.uid)}
                       onInspect={() => inspectMinion(m)}
-                      onClick={() => {
-                        if (you.gold >= costBuy && you.hand.length < MAX_HAND) buy(m.uid);
-                        else selectShop(m.uid);
-                      }}
+                      onClick={() => buy(m.uid)}
                     />
                   </Draggable>
                 ))}
@@ -166,10 +160,6 @@ export function TavernScreen() {
             </section>
 
             <section className="table-row board-row">
-              <div className="row-label">
-                战场 {you.board.length}/{MAX_BOARD}
-                {tribes ? ` · ${tribes}` : ""}
-              </div>
               <div className="row-cards">
                 {Array.from({ length: MAX_BOARD }).map((_, i) => {
                   const m = you.board[i];
@@ -177,7 +167,7 @@ export function TavernScreen() {
                     <Droppable
                       key={m?.uid ?? `slot-${i}`}
                       id={`board:${i}`}
-                      className={cn("slot table-slot", selectedHand && !m && "ring-2 ring-gold/60")}
+                      className={cn("slot table-slot", m && "is-filled", selectedHand && !m && "is-play")}
                     >
                       {m ? (
                         <Draggable
@@ -192,31 +182,21 @@ export function TavernScreen() {
                             inst={m}
                             size="md"
                             compact
-                            selected={selectedBoard === m.uid}
                             onInspect={() => inspectMinion(m)}
                             onClick={() => {
                               if (selectedHand) playHand(selectedHand, i);
-                              else if (selectedShop) buyToBoard(selectedShop, i);
-                              else if (selectedBoard && selectedBoard !== m.uid) {
-                                const from = you.board.findIndex((x) => x.uid === selectedBoard);
-                                if (from >= 0) move(selectedBoard, i);
-                              } else {
-                                selectBoard(selectedBoard === m.uid ? null : m.uid);
-                              }
                             }}
                           />
                         </Draggable>
                       ) : (
                         <button
                           type="button"
-                          className="grid size-full place-items-center text-[0.65rem] text-faint"
+                          className="slot-hit"
+                          aria-label={`空位 ${i + 1}`}
                           onClick={() => {
                             if (selectedHand) playHand(selectedHand, i);
-                            else if (selectedShop) buyToBoard(selectedShop, i);
                           }}
-                        >
-                          {i + 1}
-                        </button>
+                        />
                       )}
                     </Droppable>
                   );
@@ -225,11 +205,7 @@ export function TavernScreen() {
             </section>
 
             <section className="table-row hand-row">
-              <div className="row-label">
-                手牌 {you.hand.length}/{MAX_HAND}
-              </div>
-              <Droppable id="hand" className="row-cards hand-drop">
-                {you.hand.length === 0 && <p className="empty-row">拖酒馆随从到这里购买，或点一下直接买</p>}
+              <Droppable id="hand" className={cn("row-cards hand-drop", you.hand.length === 0 && "is-empty")}>
                 {you.hand.map((m) => (
                   <Draggable
                     key={m.uid}
@@ -317,7 +293,6 @@ export function TavernScreen() {
         )}
 
         <MinionInspect />
-        <BurningRope />
       </div>
     </TableDragProvider>
   );

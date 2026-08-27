@@ -1,33 +1,9 @@
-import { Coins, Heart, Layers, Shield, Volume2, VolumeX, CircleHelp, Sparkles } from "lucide-react";
+import { Heart, Shield, Volume2, VolumeX, CircleHelp, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useGame } from "@/game/store";
 import { HERO_BY_ID, heroArt } from "@/game/heroes";
 import { canUseHeroPower } from "@/game/engine";
 import { cn } from "@/lib/utils";
-
-function TurnClock() {
-  const endsAt = useGame((s) => s.tavernEndsAt);
-  const ended = useGame((s) => s.endedTurn);
-  const rope = useGame((s) => s.rope);
-  const [left, setLeft] = useState(0);
-  useEffect(() => {
-    if (!endsAt) {
-      setLeft(0);
-      return;
-    }
-    const tick = () => setLeft(Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
-    tick();
-    const id = window.setInterval(tick, 200);
-    return () => window.clearInterval(id);
-  }, [endsAt]);
-  if (!endsAt) return null;
-  const hot = rope || left <= 15;
-  return (
-    <div className={cn("hud-chip tabular", hot && "is-rope")}>
-      {ended ? "等待中" : `${left}s`}
-    </div>
-  );
-}
 
 export function Hud({ compact = false }: { compact?: boolean }) {
   const turn = useGame((s) => s.turn);
@@ -75,29 +51,13 @@ export function Hud({ compact = false }: { compact?: boolean }) {
         <div className="hud-chip">
           <Heart className="size-4 text-hp" />
           <span className="tabular font-semibold">{you.hp}</span>
+          {you.armor > 0 && (
+            <>
+              <Shield className="size-3.5 text-gold-2" />
+              <span className="tabular font-semibold">{you.armor}</span>
+            </>
+          )}
         </div>
-        {you.armor > 0 && (
-          <div className="hud-chip">
-            <Shield className="size-4 text-gold-2" />
-            <span className="tabular font-semibold">{you.armor}</span>
-          </div>
-        )}
-        <div className="hud-chip">
-          <Coins className="size-4 text-gold" />
-          <span className="tabular font-semibold">{you.gold}</span>
-        </div>
-        <div className="hud-chip">
-          <Layers className="size-4 text-gold-2" />
-          <span className="tabular font-semibold">T{you.tavernTier}</span>
-        </div>
-        <TurnClock />
-        {you.streak !== 0 && (
-          <div className="hud-chip">
-            <span className={you.streak > 0 ? "text-gold-2" : "text-hp"}>
-              {you.streak > 0 ? `${you.streak}连胜` : `${-you.streak}连败`}
-            </span>
-          </div>
-        )}
         <VolumeMixer />
         <button type="button" className="hud-chip" onClick={() => setHelp(true)} aria-label="帮助">
           <CircleHelp className="size-4" />
