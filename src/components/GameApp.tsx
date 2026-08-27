@@ -1,11 +1,15 @@
-import { lazy, Suspense, useEffect, useState } from "react";
-
-const GameSession = lazy(() => import("./GameSession"));
+import { useEffect, useState } from "react";
+import { PlayStage } from "./PlayStage";
+import GameSession from "./GameSession";
 
 declare global {
   interface Window {
     __TAVERN_BOOT_DONE?: boolean;
   }
+}
+
+function dismissBoot() {
+  document.getElementById("cold-boot")?.remove();
 }
 
 export function GameApp() {
@@ -14,25 +18,35 @@ export function GameApp() {
   );
 
   useEffect(() => {
-    if (window.__TAVERN_BOOT_DONE) {
+    const enter = () => {
       setBooted(true);
+      dismissBoot();
+    };
+    if (window.__TAVERN_BOOT_DONE) {
+      enter();
       return;
     }
-    const onDone = () => setBooted(true);
-    window.addEventListener("tavern-boot-done", onDone);
-    return () => window.removeEventListener("tavern-boot-done", onDone);
+    window.addEventListener("tavern-boot-done", enter);
+    const poll = window.setInterval(() => {
+      if (window.__TAVERN_BOOT_DONE) enter();
+    }, 200);
+    const failsafe = window.setTimeout(enter, 6000);
+    return () => {
+      window.removeEventListener("tavern-boot-done", enter);
+      window.clearInterval(poll);
+      window.clearTimeout(failsafe);
+    };
   }, []);
 
   useEffect(() => {
-    if (!booted) return;
-    document.getElementById("cold-boot")?.remove();
+    if (booted) dismissBoot();
   }, [booted]);
 
   if (!booted) return null;
 
   return (
-    <Suspense fallback={null}>
+    <PlayStage>
       <GameSession />
-    </Suspense>
+    </PlayStage>
   );
 }

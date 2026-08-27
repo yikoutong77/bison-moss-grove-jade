@@ -8,7 +8,7 @@
   root.id = "cold-boot";
   root.setAttribute(
     "style",
-    "position:fixed;inset:0;z-index:90;display:grid;place-items:center;background:#120c08;color:#f3ead8;font-family:system-ui,sans-serif",
+    "position:fixed;inset:0;z-index:90;display:grid;place-items:center;background:#120c08;color:#f3ead8;font-family:system-ui,sans-serif;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom)",
   );
   root.innerHTML =
     '<div style="width:min(26rem,calc(100% - 2rem));text-align:center">' +
@@ -22,7 +22,8 @@
     '<span id="boot-count" style="opacity:.7;font-variant-numeric:tabular-nums">0/0</span></div>' +
     '<div style="margin-top:6px;display:flex;justify-content:space-between;gap:12px;font-size:12px;opacity:.55">' +
     '<span id="boot-file" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">…</span>' +
-    '<span id="boot-time" style="font-variant-numeric:tabular-nums">0 ms</span></div></div>';
+    '<span id="boot-time" style="font-variant-numeric:tabular-nums">0 ms</span></div>' +
+    '<button id="boot-enter" type="button" style="display:none;margin:22px auto 0;min-height:44px;padding:10px 28px;border:1px solid #f0d080;border-radius:12px;background:#c45c26;color:#fff6ea;font-size:16px;font-weight:600">进入酒馆</button></div>';
 
   function mount() {
     if (!root.isConnected) document.documentElement.appendChild(root);
@@ -36,6 +37,7 @@
   var fileEl = null;
   var timeEl = null;
   var statusEl = null;
+  var enterBtn = null;
 
   function els() {
     fill = fill || document.getElementById("boot-fill");
@@ -44,6 +46,7 @@
     fileEl = fileEl || document.getElementById("boot-file");
     timeEl = timeEl || document.getElementById("boot-time");
     statusEl = statusEl || document.getElementById("boot-status");
+    enterBtn = enterBtn || document.getElementById("boot-enter");
   }
 
   function fmtMs(ms) {
@@ -64,36 +67,49 @@
     return new Promise(function (resolve) {
       var img = new Image();
       var done = false;
-      var finish = function () {
+      var finishOne = function () {
         if (done) return;
         done = true;
         resolve(url);
       };
-      img.onload = finish;
-      img.onerror = finish;
+      img.onload = finishOne;
+      img.onerror = finishOne;
       img.src = url;
-      setTimeout(finish, 8000);
+      setTimeout(finishOne, 4000);
     });
   }
 
   function finish() {
+    if (window.__TAVERN_BOOT_DONE) return;
     window.__TAVERN_BOOT_DONE = true;
+    els();
     if (statusEl) statusEl.textContent = "就绪";
     paint(1, 1, "就绪");
+    if (enterBtn) {
+      enterBtn.style.display = "inline-flex";
+      enterBtn.onclick = function () {
+        window.dispatchEvent(new Event("tavern-boot-done"));
+        if (root.isConnected) root.remove();
+      };
+    }
     window.dispatchEvent(new Event("tavern-boot-done"));
+    setTimeout(function () {
+      if (root.isConnected) root.remove();
+    }, 800);
   }
 
   function run(urls) {
+    els();
     if (statusEl) statusEl.textContent = "正在装填卡图与英雄立绘";
-    var total = urls.length || 1;
+    var list = urls && urls.length ? urls : ["/tavern-bg.jpg"];
+    var total = list.length;
     var loaded = 0;
-    paint(0, total, urls[0] ? urls[0].split("/").pop() : "");
+    paint(0, total, list[0].split("/").pop());
     var i = 0;
-    var workers = 6;
+    var workers = 8;
     function next() {
-      if (i >= urls.length) return Promise.resolve();
-      var url = urls[i++];
-      paint(loaded, total, url.split("/").pop());
+      if (i >= list.length) return Promise.resolve();
+      var url = list[i++];
       return loadOne(url).then(function () {
         loaded += 1;
         paint(loaded, total, url.split("/").pop());
@@ -102,7 +118,7 @@
       });
     }
     var jobs = [];
-    for (var w = 0; w < workers; w++) jobs.push(next());
+    for (var w = 0; w < Math.min(workers, list.length); w++) jobs.push(next());
     Promise.all(jobs).then(finish);
   }
 
@@ -113,11 +129,10 @@
     })
     .then(run)
     .catch(function () {
-      if (statusEl) statusEl.textContent = "清单失败，直接进入";
       run(["/tavern-bg.jpg"]);
     });
 
   setTimeout(function () {
     if (!window.__TAVERN_BOOT_DONE) finish();
-  }, 20000);
+  }, 8000);
 })();

@@ -140,7 +140,7 @@ export function FightReplay() {
 
   return (
     <div className="fixed inset-0 z-40 grid place-items-center bg-bg-deep/70 p-3">
-      <div className="panel max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-2xl p-4 sm:p-5">
+      <div className="panel max-h-[92%] w-full max-w-3xl overflow-y-auto rounded-2xl p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             {hero && (

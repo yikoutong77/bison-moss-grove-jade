@@ -6,7 +6,7 @@ export function StartScreen() {
   const setHelp = useGame((s) => s.setHelp);
 
   return (
-    <div className="tavern-shell relative flex h-dvh flex-col items-center justify-center px-5 py-6">
+    <div className="tavern-shell relative flex h-full flex-col items-center justify-center px-5 py-6">
       <div className="absolute inset-0 bg-linear-to-b from-bg-deep/40 via-transparent to-bg-deep/80" />
       <div className="relative z-10 flex max-w-lg flex-col items-center text-center">
         <p className="text-sm font-medium tracking-[0.28em] text-gold-2">八人混战 · 自动对战</p>

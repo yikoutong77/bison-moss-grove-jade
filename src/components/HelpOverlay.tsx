@@ -8,7 +8,7 @@ export function HelpOverlay() {
 
   return (
     <div className="fixed inset-0 z-40 grid place-items-center bg-bg-deep/70 p-4">
-      <div className="panel relative max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-2xl p-6">
+      <div className="panel relative max-h-[85%] w-full max-w-lg overflow-y-auto rounded-2xl p-6">
         <button
           type="button"
           className="absolute right-3 top-3 grid size-10 place-items-center rounded-full border border-border"

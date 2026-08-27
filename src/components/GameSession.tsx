@@ -34,7 +34,7 @@ export default function GameSession() {
   }, [toast, setToast]);
 
   return (
-    <div className="h-dvh overflow-hidden bg-bg text-fg">
+    <div className="session-root">
       {phase === "menu" && <StartScreen />}
       {phase === "hero-select" && <HeroSelect />}
       {(phase === "tavern" || phase === "discover") && <TavernScreen />}

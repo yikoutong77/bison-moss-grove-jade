@@ -20,7 +20,7 @@ export function GameOverScreen() {
   const title = place === 1 ? "冠军" : `第 ${place} 名`;
 
   return (
-    <div className="tavern-shell flex h-dvh flex-col items-center overflow-y-auto px-4 py-6">
+    <div className="tavern-shell flex h-full flex-col items-center overflow-y-auto px-4 py-6">
       <div className="panel w-full max-w-lg rounded-2xl p-6">
         <div className="flex flex-col items-center text-center">
           <Crown className={cn("size-10", place === 1 ? "text-gold" : "text-muted")} />

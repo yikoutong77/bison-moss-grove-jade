@@ -8,7 +8,7 @@ export function HeroSelect() {
   const heroes = choices.length ? choices : HEROES.slice(0, 4);
 
   return (
-    <div className="tavern-shell h-dvh overflow-y-auto px-4 py-4 sm:px-8">
+    <div className="tavern-shell h-full overflow-y-auto px-4 py-4 sm:px-8">
       <div className="mx-auto max-w-5xl">
         <p className="text-center text-sm tracking-[0.2em] text-gold-2">本局英雄</p>
         <h2 className="font-display mt-2 text-center text-3xl font-bold">四选一，坐镇酒馆</h2>

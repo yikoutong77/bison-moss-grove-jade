@@ -368,14 +368,38 @@ body,
 #app {
   height: 100%;
   overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+.play-stage {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--vvw, 100dvw);
+  height: var(--vvh, 100dvh);
+  overflow: hidden;
+  background: var(--color-bg);
+  container-type: size;
+  container-name: stage;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  box-sizing: border-box;
+}
+
+.session-root {
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg);
+  color: var(--color-fg);
 }
 
 .table-shell {
-  height: 100dvh;
+  height: 100%;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
-  --table-card: clamp(2.7rem, min(12dvh, 8.6vw), 5.5rem);
+  --table-card: clamp(2.5rem, 20cqh, 5.2rem);
 }
 
 .combat-shell {
@@ -385,11 +409,11 @@ body,
 .table-top {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0.55rem;
+  gap: 0.4rem;
+  padding: 0.15rem 0.4rem;
   border-bottom: 1px solid var(--color-border);
   background: color-mix(in oklab, var(--color-bg-deep) 82%, transparent);
-  min-height: 52px;
+  min-height: 40px;
 }
 
 .orb-rail {
@@ -397,27 +421,28 @@ body,
   min-width: 0;
   flex: 1;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.3rem;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .hero-orb {
   position: relative;
   display: flex;
-  width: 2.75rem;
-  min-height: 44px;
+  width: 2.35rem;
+  min-height: 0;
   flex-shrink: 0;
   flex-direction: column;
   align-items: center;
-  gap: 0.1rem;
-  padding: 0.2rem 0.15rem 0.4rem;
+  gap: 0.08rem;
+  padding: 0.1rem 0.1rem 0.28rem;
   border: 1px solid var(--color-border);
   border-radius: 10px;
   background: var(--color-surface);
 }
 .hero-orb img {
-  width: 1.85rem;
-  height: 1.85rem;
+  width: 1.7rem;
+  height: 1.7rem;
   border-radius: 9999px;
   object-fit: cover;
   object-position: top;
@@ -494,16 +519,16 @@ body,
 .table-main {
   display: grid;
   min-height: 0;
-  grid-template-columns: minmax(7.2rem, 15vw) minmax(0, 1fr);
+  grid-template-columns: minmax(5.2rem, 12cqw) minmax(0, 1fr);
 }
 
 .bob-panel {
   display: flex;
   min-height: 0;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.3rem;
   overflow: auto;
-  padding: 0.45rem;
+  padding: 0.35rem;
   border-right: 1px solid var(--color-border);
   background: color-mix(in oklab, var(--color-surface) 72%, transparent);
 }
@@ -522,12 +547,12 @@ body,
 }
 .bob-sell {
   display: flex;
-  min-height: 3.6rem;
+  min-height: 3.2rem;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.2rem;
-  padding: 0.4rem;
+  gap: 0.15rem;
+  padding: 0.3rem;
   border: 1px dashed var(--color-gold);
   border-radius: 12px;
   color: var(--color-muted);
@@ -536,7 +561,7 @@ body,
 .bob-btn {
   width: 100%;
   min-height: 40px;
-  padding: 0.3rem 0.45rem;
+  padding: 0.28rem 0.4rem;
   font-size: 0.72rem;
 }
 .end-turn {
@@ -547,8 +572,8 @@ body,
   display: grid;
   min-height: 0;
   grid-template-rows: minmax(0, 1.05fr) minmax(0, 1.2fr) minmax(0, 0.88fr);
-  gap: 0.2rem;
-  padding: 0.2rem 0.5rem 0.45rem;
+  gap: 0.12rem;
+  padding: 0.12rem 0.4rem 0.3rem;
 }
 .table-row {
   display: flex;
@@ -567,8 +592,10 @@ body,
   flex: 1;
   align-items: flex-end;
   justify-content: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.25rem;
+  gap: 0.28rem;
+  padding: 0.12rem 0.15rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .hand-drop {
   border-radius: 12px;
@@ -624,33 +651,111 @@ body,
   place-items: center;
 }
 .combat-timeline-wrap {
-  max-height: 34dvh;
+  max-height: 28cqh;
   overflow: auto;
-  padding: 0.2rem 0.5rem 0.45rem;
+  padding: 0.15rem 0.4rem 0.3rem;
 }
 .combat-timeline-wrap .timeline-log {
-  max-height: 5.2rem;
+  max-height: 4.6rem;
+}
+
+/* 横屏：炉石手游桌面，整桌塞进短边 */
+@media (orientation: landscape) {
+  .table-shell {
+    --table-card: min(5rem, calc((100cqh - 42px) / 4.55));
+  }
+  .row-label {
+    padding: 0 0.15rem;
+    font-size: 0.58rem;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+  .table-top {
+    min-height: 34px;
+    padding: 0.08rem 0.3rem;
+  }
+  .row-label {
+    display: none;
+  }
+  .hud-bar.is-compact .hud-chip,
+  .hud-chip {
+    min-height: 30px;
+    padding: 0.12rem 0.4rem;
+  }
+  .bob-btn {
+    min-height: 34px;
+    font-size: 0.62rem;
+  }
+  .bob-sell {
+    min-height: 2.4rem;
+  }
+}
+
+/* 竖屏：可玩的堆叠桌面，鲍勃变成底栏，不必把屏幕转 90° */
+@media (orientation: portrait) {
+  .table-shell {
+    --table-card: clamp(3.1rem, 13.5cqw, 4.6rem);
+  }
+  .table-top {
+    flex-wrap: wrap;
+  }
+  .table-top .hud-bar {
+    max-width: 100%;
+    width: 100%;
+  }
+  .table-main {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .table-field {
+    order: 1;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 0.85fr);
+    padding: 0.1rem 0.25rem 0.15rem;
+  }
+  .bob-panel {
+    order: 2;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0.3rem;
+    overflow-x: auto;
+    padding: 0.3rem 0.35rem calc(0.3rem + env(safe-area-inset-bottom));
+    border-right: 0;
+    border-top: 1px solid var(--color-border);
+  }
+  .bob-face {
+    display: none;
+  }
+  .bob-sell {
+    min-width: 4.2rem;
+    min-height: 44px;
+    flex: 0 0 auto;
+  }
+  .bob-btn {
+    width: auto;
+    flex: 1 1 0;
+    min-width: 4.2rem;
+    min-height: 44px;
+  }
+  .end-turn {
+    margin-top: 0;
+    flex: 1.2 1 0;
+  }
+  .combat-timeline-wrap {
+    max-height: 22cqh;
+  }
 }
 
 @media (max-width: 740px) {
-  .table-main {
-    grid-template-columns: 5.5rem minmax(0, 1fr);
-  }
-  .bob-btn {
-    min-height: 36px;
-    font-size: 0.62rem;
-  }
   .bob-name {
     font-size: 0.85rem;
-  }
-  .table-top .hud-bar {
-    max-width: 48%;
   }
 }
 
 .boot-shell {
   display: grid;
-  height: 100dvh;
+  height: 100%;
   place-items: center;
   padding: 1.5rem;
   background:
