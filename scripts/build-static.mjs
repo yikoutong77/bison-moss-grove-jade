@@ -5,7 +5,7 @@
  * fail on an unused nitro SSR environment — we treat a valid index.html
  * as success and rewrite the stylesheet href to the client CSS chunk.
  */
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import {
   copyFileSync,
   cpSync,
@@ -14,15 +14,59 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const publicDir = join(root, ".output", "public");
 const distDir = join(root, "dist");
 const binPath = join(root, "node_modules", ".bin");
+
+function stripUserIni(dir) {
+  if (!existsSync(dir)) return;
+  let st;
+  try {
+    st = statSync(dir);
+  } catch {
+    return;
+  }
+  if (!st.isDirectory()) return;
+  let names = [];
+  try {
+    names = readdirSync(dir);
+  } catch {
+    return;
+  }
+  for (const name of names) {
+    const p = join(dir, name);
+    if (name === ".user.ini") {
+      spawnSync("chattr", ["-i", p], { stdio: "ignore" });
+      try {
+        rmSync(p, { force: true });
+      } catch {
+        console.warn("[build:static] could not remove", p);
+      }
+      continue;
+    }
+    try {
+      if (statSync(p).isDirectory()) stripUserIni(p);
+    } catch {
+      /* skip */
+    }
+  }
+}
+
+function skipBaoTaJunk(src) {
+  const base = src.split(sep).pop();
+  return base !== ".user.ini";
+}
+
+stripUserIni(join(root, "public"));
+stripUserIni(join(root, ".output"));
+stripUserIni(distDir);
 
 function runViteBuild() {
   return new Promise((resolve) => {
@@ -40,6 +84,7 @@ function runViteBuild() {
 }
 
 const code = await runViteBuild();
+stripUserIni(publicDir);
 const indexPath = join(publicDir, "index.html");
 if (!existsSync(indexPath)) {
   console.error("[build:static] missing .output/public/index.html");
@@ -64,7 +109,8 @@ if (existsSync(strayZip)) rmSync(strayZip);
 
 if (existsSync(distDir)) rmSync(distDir, { recursive: true, force: true });
 mkdirSync(distDir, { recursive: true });
-cpSync(publicDir, distDir, { recursive: true });
+cpSync(publicDir, distDir, { recursive: true, filter: skipBaoTaJunk });
+stripUserIni(distDir);
 
 console.log(`[build:static] ready — upload dist/ (or .output/public) as the site root`);
 process.exit(0);

@@ -29,6 +29,10 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 echo "node $(node -v)  npm $(npm -v)"
 
+# 宝塔会在目录里放不可变的 .user.ini，nitro 扫到会 ENOTDIR
+find "$ROOT" -name ".user.ini" -exec chattr -i {} \; 2>/dev/null || true
+find "$ROOT" -name ".user.ini" -delete 2>/dev/null || true
+
 npm install --no-audit --no-fund
 npm run build:static
 
