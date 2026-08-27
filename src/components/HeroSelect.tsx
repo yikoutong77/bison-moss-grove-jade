@@ -25,7 +25,12 @@ export function HeroSelect() {
                 <img
                   src={heroArt(h.art)}
                   alt={h.name}
+                  loading="eager"
+                  decoding="async"
                   className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                  onError={(e) => {
+                    e.currentTarget.style.opacity = "0";
+                  }}
                 />
                 {h.armor > 0 && (
                   <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full border border-border bg-surface/85 px-2 py-0.5 text-[0.65rem] font-semibold text-gold-2">

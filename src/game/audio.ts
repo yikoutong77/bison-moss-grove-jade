@@ -13,9 +13,16 @@ const TRACKS: Record<BgmId, string> = {
 };
 
 const BGM_VOL = 0.34;
+
+type Slot = {
+  el: HTMLAudioElement;
+  timer: number;
+  start: () => void;
+};
+
 let bgmId: BgmId | null = null;
-let bgm: HTMLAudioElement | null = null;
-let fadeTimer = 0;
+let current: Slot | null = null;
+const fading: Slot[] = [];
 
 export function unlockAudio() {
   if (!ctx) {
@@ -26,7 +33,7 @@ export function unlockAudio() {
     master.connect(ctx.destination);
   }
   if (ctx.state === "suspended") void ctx.resume();
-  if (bgm && !muted && bgm.paused) void bgm.play().catch(() => {});
+  if (current && !muted && current.el.paused) void current.el.play().catch(() => {});
 }
 
 export function setMuted(v: boolean) {
@@ -37,13 +44,12 @@ export function setMuted(v: boolean) {
     /* ignore */
   }
   if (master && ctx) master.gain.setTargetAtTime(v ? 0 : 0.22, ctx.currentTime, 0.02);
-  if (bgm) {
-    if (v) {
-      bgm.pause();
-    } else {
-      bgm.volume = BGM_VOL;
-      void bgm.play().catch(() => {});
-    }
+  if (!current) return;
+  if (v) {
+    current.el.pause();
+  } else {
+    current.el.volume = BGM_VOL;
+    void current.el.play().catch(() => {});
   }
 }
 
@@ -63,58 +69,97 @@ export function restoreMute(): boolean {
   return false;
 }
 
-function fadeTo(el: HTMLAudioElement, target: number, ms: number, done?: () => void) {
-  window.clearInterval(fadeTimer);
-  const start = el.volume;
+function clearTimer(s: Slot) {
+  if (s.timer) {
+    window.clearInterval(s.timer);
+    s.timer = 0;
+  }
+}
+
+function dispose(s: Slot) {
+  clearTimer(s);
+  s.el.removeEventListener("canplaythrough", s.start);
+  s.el.pause();
+  s.el.removeAttribute("src");
+  try {
+    s.el.load();
+  } catch {
+    /* ignore */
+  }
+}
+
+function stopAll() {
+  if (current) {
+    dispose(current);
+    current = null;
+  }
+  while (fading.length) {
+    const s = fading.pop();
+    if (s) dispose(s);
+  }
+}
+
+function fadeOutThenDrop(s: Slot, ms: number) {
+  fading.push(s);
+  const startVol = s.el.volume;
   const t0 = performance.now();
-  fadeTimer = window.setInterval(() => {
+  clearTimer(s);
+  s.timer = window.setInterval(() => {
     const k = Math.min(1, (performance.now() - t0) / ms);
-    const v = start + (target - start) * k;
-    el.volume = Math.max(0, Math.min(1, v));
+    s.el.volume = startVol * (1 - k);
     if (k >= 1) {
-      window.clearInterval(fadeTimer);
-      fadeTimer = 0;
-      done?.();
+      const i = fading.indexOf(s);
+      if (i >= 0) fading.splice(i, 1);
+      dispose(s);
     }
-  }, 40);
+  }, 32);
+}
+
+function fadeIn(s: Slot, ms: number) {
+  clearTimer(s);
+  const target = muted ? 0 : BGM_VOL;
+  const startVol = s.el.volume;
+  const t0 = performance.now();
+  s.timer = window.setInterval(() => {
+    const k = Math.min(1, (performance.now() - t0) / ms);
+    s.el.volume = startVol + (target - startVol) * k;
+    if (k >= 1) clearTimer(s);
+  }, 32);
 }
 
 export function playBgm(id: BgmId) {
-  if (bgmId === id && bgm) {
-    if (!muted && bgm.paused) void bgm.play().catch(() => {});
+  if (bgmId === id && current) {
+    if (!muted && current.el.paused) void current.el.play().catch(() => {});
     return;
   }
+  const prev = current;
+  current = null;
+  if (prev) fadeOutThenDrop(prev, 280);
+  while (fading.length > 1) {
+    const extra = fading.shift();
+    if (extra && extra !== prev) dispose(extra);
+  }
+
   bgmId = id;
-  const next = new Audio(TRACKS[id]);
-  next.loop = true;
-  next.preload = "auto";
-  next.volume = 0;
-  const prev = bgm;
-  bgm = next;
-  const start = () => {
-    if (bgm !== next) return;
-    if (!muted) void next.play().catch(() => {});
-    fadeTo(next, muted ? 0 : BGM_VOL, 700);
-    if (prev) {
-      fadeTo(prev, 0, 500, () => {
-        prev.pause();
-        prev.src = "";
-      });
-    }
+  const el = new Audio(TRACKS[id]);
+  el.loop = true;
+  el.preload = "auto";
+  el.volume = 0;
+  const slot: Slot = { el, timer: 0, start: () => undefined };
+  slot.start = () => {
+    if (current !== slot) return;
+    el.removeEventListener("canplaythrough", slot.start);
+    if (!muted) void el.play().catch(() => {});
+    fadeIn(slot, 360);
   };
-  if (next.readyState >= 2) start();
-  else next.addEventListener("canplaythrough", start, { once: true });
+  current = slot;
+  if (el.readyState >= 3) slot.start();
+  else el.addEventListener("canplaythrough", slot.start);
 }
 
 export function stopBgm() {
   bgmId = null;
-  if (!bgm) return;
-  const prev = bgm;
-  bgm = null;
-  fadeTo(prev, 0, 400, () => {
-    prev.pause();
-    prev.src = "";
-  });
+  stopAll();
 }
 
 function beep(tones: Tone[]) {

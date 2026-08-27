@@ -66,6 +66,9 @@ export function CombatBoard({
     }
     const { x, y } = measureDelta(from, to);
     setStrike({ uid: attacking, x, y });
+    from.style.animation = "none";
+    void from.offsetWidth;
+    from.style.removeProperty("animation");
   }, [attacking, hit, strikeId]);
 
   useLayoutEffect(() => {
@@ -90,7 +93,7 @@ export function CombatBoard({
         const s = isAtk && strike?.uid === m.uid ? strike : null;
         return (
           <div
-            key={isAtk ? `${m.uid}-s${strikeId}` : m.uid}
+            key={m.uid}
             ref={bind(m.uid)}
             className={cn(
               "combat-piece",

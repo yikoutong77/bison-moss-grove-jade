@@ -50,7 +50,15 @@ export function LobbyStrip() {
             )}
           >
             <span className="hero-orb-rank">{rank}</span>
-            <img src={hero ? heroArt(hero.art) : ""} alt="" />
+            <img
+              src={hero ? heroArt(hero.art) : ""}
+              alt=""
+              loading="eager"
+              decoding="async"
+              onError={(e) => {
+                e.currentTarget.style.opacity = "0";
+              }}
+            />
             <span className={cn("hero-orb-hp tabular", !p.alive && "is-out")}>
               {p.alive ? p.hp + (p.armor > 0 ? `+${p.armor}` : "") : "出局"}
             </span>

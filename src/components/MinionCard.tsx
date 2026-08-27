@@ -65,6 +65,10 @@ export function MinionCard({
       ].filter(Boolean) as Array<keyof typeof KEYWORD_LABEL>)
     : inst.keywords;
 
+  const [artBroken, setArtBroken] = useState(false);
+  useEffect(() => {
+    setArtBroken(false);
+  }, [art]);
   const prevShield = useRef(shield);
   const [shieldBreak, setShieldBreak] = useState(false);
   useEffect(() => {
@@ -138,21 +142,20 @@ export function MinionCard({
         dim && "opacity-50",
       )}
     >
+      {taunt && <div className="kw-taunt" aria-hidden />}
       <div className="minion-face">
         <img
           src={artUrl(art)}
           alt={name}
-          className="h-full w-full object-cover object-top"
+          className={cn("h-full w-full object-cover object-top", artBroken && "hidden")}
           draggable={false}
-          loading="lazy"
+          loading="eager"
           decoding="async"
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = "none";
-          }}
+          onError={() => setArtBroken(true)}
         />
+        {artBroken && <div className="minion-silhouette" aria-hidden />}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-bg-deep to-transparent" />
         {frozen && <div className="frost-sheet" />}
-        {taunt && <div className="kw-taunt" aria-hidden />}
         {(shield || shieldBreak) && (
           <div className={cn("kw-bubble", shieldBreak && "is-break")} aria-hidden />
         )}
