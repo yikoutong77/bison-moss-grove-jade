@@ -175,6 +175,23 @@ export function MinionCard({
             </svg>
           </span>
         )}
+        {reborn && (
+          <span className="kw-reborn-badge" title="复生">
+            <svg viewBox="0 0 32 36" aria-hidden>
+              <path
+                d="M8 34 V16 C8 8 12 4 16 4 C20 4 24 8 24 16 V34 Z"
+                fill="#d8d0c4"
+                stroke="#2e2820"
+                strokeWidth="1.6"
+              />
+              <rect x="5" y="32" width="22" height="3.4" rx="0.6" fill="#8a8074" stroke="#2e2820" strokeWidth="1" />
+              <path d="M16 11 V24 M11.5 15.5 H20.5" stroke="#3f372e" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </span>
+        )}
+        <div className="minion-caption">
+          <div className="minion-name">{name}</div>
+        </div>
         {showFreeze && onFreeze && (
           <span
             role="button"
@@ -196,23 +213,6 @@ export function MinionCard({
             <Snowflake className="size-3" />
           </span>
         )}
-      </div>
-      <div className="minion-plinth">
-        {reborn && (
-          <span className="kw-reborn-badge" title="复生">
-            <svg viewBox="0 0 32 36" aria-hidden>
-              <path
-                d="M8 34 V16 C8 8 12 4 16 4 C20 4 24 8 24 16 V34 Z"
-                fill="#d8d0c4"
-                stroke="#2e2820"
-                strokeWidth="1.6"
-              />
-              <rect x="5" y="32" width="22" height="3.4" rx="0.6" fill="#8a8074" stroke="#2e2820" strokeWidth="1" />
-              <path d="M16 11 V24 M11.5 15.5 H20.5" stroke="#3f372e" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </span>
-        )}
-        <div className="minion-name">{name}</div>
       </div>
       <span className={cn("stat-orb atk", poisonous && "is-poison")}>{inst.atk}</span>
       <span className="stat-orb hp">{inst.hp}</span>

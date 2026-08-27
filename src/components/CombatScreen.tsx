@@ -2,11 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { FastForward, Pause, Play } from "lucide-react";
 import { MinionInspect } from "./MinionInspect";
 import { LobbyStrip } from "./LobbyStrip";
-import { CombatTimeline } from "./CombatTimeline";
 import { CombatBoard } from "./CombatBoard";
 import { useGame } from "@/game/store";
 import { HERO_BY_ID, heroArt } from "@/game/heroes";
-import { lastEventIndexOfBeat } from "@/game/timeline";
 import { initialPlayback, replayTo, stepPlayback, type PlaybackState } from "@/game/playback";
 import { sfx } from "@/game/audio";
 import { cn } from "@/lib/utils";
@@ -92,8 +90,6 @@ export function CombatScreen() {
 
   const [view, setView] = useState<PlaybackState | null>(null);
   const [paused, setPaused] = useState(false);
-  const [held, setHeld] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const [activeBeat, setActiveBeat] = useState(0);
   const idxRef = useRef(0);
   const clockRef = useRef(0);
@@ -122,8 +118,6 @@ export function CombatScreen() {
     setView(init);
     setActiveBeat(0);
     setPaused(false);
-    setHeld(false);
-    setExpanded(false);
     setFacePop(0);
   }, [startKey, combat]);
 
@@ -131,20 +125,6 @@ export function CombatScreen() {
     setView(state);
     const beat = events[Math.max(0, index - 1)]?.beat ?? 0;
     setActiveBeat(beat);
-  };
-
-  const seekBeat = (beatId: number) => {
-    if (!combat || online) return;
-    const last = lastEventIndexOfBeat(combat.events, beatId);
-    const state = replayTo(combat.playerStart, combat.enemyStart, combat.events, last);
-    stateRef.current = state;
-    idxRef.current = last + 1;
-    const beat = combat.beats[beatId];
-    clockRef.current = (beat?.endAt ?? 0) / 1000;
-    setPaused(true);
-    setHeld(true);
-    setExpanded(true);
-    sync(state, last + 1);
   };
 
   useEffect(() => {
@@ -218,7 +198,7 @@ export function CombatScreen() {
     }
     const t = window.setTimeout(() => {
       continueFromResult();
-    }, dmg ? 1450 : 700);
+    }, dmg ? 1280 : 600);
     return () => {
       window.clearTimeout(popTimer);
       window.clearTimeout(t);
@@ -305,23 +285,8 @@ export function CombatScreen() {
         }
       />
 
-      <div className="combat-timeline-wrap">
-        <CombatTimeline
-          beats={beats}
-          activeBeat={activeBeat}
-          onSeek={seekBeat}
-          expanded={expanded}
-          onToggle={() => {
-            if (online) return;
-            setExpanded((v) => !v);
-            setHeld(true);
-            setPaused(true);
-          }}
-        />
-      </div>
-
       {online && phase === "result" && (
-        <p className="pb-2 text-center text-xs text-gold-2">
+        <p className="sr-only">
           <CombatWaitClock label />
         </p>
       )}

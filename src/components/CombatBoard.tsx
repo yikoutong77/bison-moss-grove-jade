@@ -141,7 +141,6 @@ export function CombatBoard({
           </div>
         );
       })}
-      {board.length === 0 && <p className="empty-row">战场空空</p>}
     </div>
   );
 

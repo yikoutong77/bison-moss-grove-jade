@@ -51,7 +51,7 @@ export interface RoomHooks {
 }
 
 const ROPE_MS = 15_000;
-const RESULT_HOLD_MS = 10_000;
+const RESULT_HOLD_MS = 1_200;
 
 function tavernMs(turn: number): number {
   return Math.min(90_000, 40_000 + turn * 5_000);
