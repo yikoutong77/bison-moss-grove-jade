@@ -32,11 +32,17 @@ export function saveName(name: string) {
   }
 }
 
-export function wsUrl() {
+export function wsCandidates() {
   const env = import.meta.env.VITE_WS_URL as string | undefined;
-  if (env) return env;
+  if (env) return [env];
   const proto = location.protocol === "https:" ? "wss:" : "ws:";
-  return `${proto}//${location.host}/ws`;
+  const { host, hostname, port } = location;
+  const list = [`${proto}//${host}/ws`];
+  if (port !== "8787") {
+    list.push(`${proto}//${hostname}:8787`);
+    list.push(`${proto}//${hostname}:8787/ws`);
+  }
+  return [...new Set(list)];
 }
 
 type Handler = (msg: ServerMsg) => void;
@@ -67,42 +73,60 @@ export function disconnect() {
   socket = null;
 }
 
-export function connect(name: string): Promise<void> {
+function openSocket(url: string, timeoutMs: number) {
+  return new Promise<WebSocket>((resolve, reject) => {
+    const ws = new WebSocket(url);
+    const timer = window.setTimeout(() => {
+      ws.close();
+      reject(new Error(`连接超时 ${url}`));
+    }, timeoutMs);
+    ws.onopen = () => {
+      window.clearTimeout(timer);
+      resolve(ws);
+    };
+    ws.onerror = () => {
+      window.clearTimeout(timer);
+      try {
+        ws.close();
+      } catch {
+        /* ignore */
+      }
+      reject(new Error(`无法连接 ${url}`));
+    };
+  });
+}
+
+export async function connect(name: string): Promise<void> {
   helloName = name.trim() || "旅人";
   saveName(helloName);
   if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
     send({ t: "hello", name: helloName, clientId: getClientId() });
-    return Promise.resolve();
+    return;
   }
-  return new Promise((resolve, reject) => {
-    const url = wsUrl();
-    const ws = new WebSocket(url);
-    socket = ws;
-    const timer = window.setTimeout(() => {
-      reject(new Error("连接超时，请确认联机服务已启动"));
-      ws.close();
-    }, 6000);
-    ws.onopen = () => {
-      window.clearTimeout(timer);
+  const urls = wsCandidates();
+  let lastErr: Error | null = null;
+  for (const url of urls) {
+    try {
+      const ws = await openSocket(url, 4000);
+      socket = ws;
+      ws.onmessage = (ev) => {
+        try {
+          emit(JSON.parse(String(ev.data)) as ServerMsg);
+        } catch {
+          /* ignore */
+        }
+      };
+      ws.onclose = () => {
+        if (socket === ws) socket = null;
+      };
       send({ t: "hello", name: helloName, clientId: getClientId() });
-      resolve();
-    };
-    ws.onerror = () => {
-      window.clearTimeout(timer);
-      emit({ t: "error", message: "无法连接房间服务" });
-      reject(new Error("无法连接房间服务"));
-    };
-    ws.onmessage = (ev) => {
-      try {
-        emit(JSON.parse(String(ev.data)) as ServerMsg);
-      } catch {
-        /* ignore */
-      }
-    };
-    ws.onclose = () => {
-      if (socket === ws) socket = null;
-    };
-  });
+      return;
+    } catch (err) {
+      lastErr = err instanceof Error ? err : new Error(String(err));
+    }
+  }
+  emit({ t: "error", message: "无法连接房间服务，请检查 8787 或 /ws 反代" });
+  throw lastErr ?? new Error("无法连接房间服务");
 }
 
 export function isOnline() {
