@@ -20,7 +20,7 @@ export function Hud({ compact = false }: { compact?: boolean }) {
 
   return (
     <header className={cn("hud-bar", compact && "is-compact")}>
-      <div className="flex min-w-0 items-center gap-2">
+      <div className="hud-id flex min-w-0 items-center gap-2">
         <img
           src={hero ? heroArt(hero.art) : ""}
           alt=""
@@ -30,24 +30,24 @@ export function Hud({ compact = false }: { compact?: boolean }) {
           <div className="font-display truncate text-sm font-semibold leading-tight">{you.name}</div>
           <div className="text-[0.65rem] text-muted">第 {turn} 回合</div>
         </div>
-        {power && (
-          <button
-            type="button"
-            className={cn("hero-power", you.powerUsed && "is-used")}
-            disabled={!canCast}
-            onClick={usePower}
-            title={you.powerUsed ? "本回合已使用" : power.text}
-          >
-            <Sparkles className="size-3.5 text-gold-2" />
-            <span className="leading-tight">
-              <span className="block text-[0.68rem] font-semibold">{power.name}</span>
-              <span className="block text-[0.6rem] text-muted">
-                {you.powerUsed ? "已使用" : `${power.cost} 金`}
-              </span>
-            </span>
-          </button>
-        )}
       </div>
+      {power && (
+        <button
+          type="button"
+          className={cn("hero-power", you.powerUsed && "is-used")}
+          disabled={!canCast}
+          onClick={usePower}
+          title={you.powerUsed ? "本回合已使用" : power.text}
+        >
+          <Sparkles className="size-3.5 text-gold-2" />
+          <span className="leading-tight">
+            <span className="block text-[0.68rem] font-semibold">{power.name}</span>
+            <span className="block text-[0.6rem] text-muted">
+              {you.powerUsed ? "已使用" : `${power.cost} 金`}
+            </span>
+          </span>
+        </button>
+      )}
       <div className="flex shrink-0 items-center gap-1.5">
         <div className="hud-chip">
           <Heart className="size-4 text-hp" />

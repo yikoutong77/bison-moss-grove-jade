@@ -14,7 +14,7 @@ export function StartScreen() {
           酒馆战棋
         </h1>
         <p className="mt-2 max-w-md text-pretty text-sm text-muted">
-          手机请横过来操作。招募随从、释放英雄技能、三连升金，回合结束后自动交锋。
+          横屏全屏操作。招募随从、释放英雄技能、三连升金，回合结束后自动交锋。
         </p>
         <div className="mt-5 flex w-full max-w-xl flex-wrap justify-center gap-3">
           <button type="button" className="action-btn primary h-11 min-w-36 text-base" onClick={startSelect}>

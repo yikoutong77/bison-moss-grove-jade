@@ -1,102 +1,84 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type Mode = "fill" | "rotate" | "letterbox";
-
-interface StageBox {
-  mode: Mode;
-  width: number;
-  height: number;
-}
-
-function isTouchPhone() {
-  return window.matchMedia("(pointer: coarse)").matches || window.matchMedia("(hover: none)").matches;
-}
-
-function measure(): StageBox {
+function visualSize() {
   const vv = window.visualViewport;
-  const vw = Math.round(vv?.width ?? window.innerWidth);
-  const vh = Math.round(vv?.height ?? window.innerHeight);
-  if (vw >= vh) {
-    return { mode: "fill", width: vw, height: vh };
-  }
-  if (isTouchPhone()) {
-    return { mode: "rotate", width: vh, height: vw };
-  }
-  const aspect = 16 / 9;
-  let width = vw;
-  let height = Math.round(vw / aspect);
-  if (height > vh * 0.9) {
-    height = Math.round(vh * 0.9);
-    width = Math.round(height * aspect);
-  }
-  return { mode: "letterbox", width, height };
+  return {
+    w: Math.round(vv?.width ?? window.innerWidth),
+    h: Math.round(vv?.height ?? window.innerHeight),
+  };
+}
+
+function applyViewportVars() {
+  const { w, h } = visualSize();
+  const root = document.documentElement;
+  root.style.setProperty("--vvw", `${w}px`);
+  root.style.setProperty("--vvh", `${h}px`);
+  const landscape = w > h;
+  root.classList.toggle("is-landscape", landscape);
+  root.classList.toggle("is-portrait", !landscape);
+  return { w, h, landscape };
 }
 
 export function PlayStage({ children }: { children: ReactNode }) {
-  const [box, setBox] = useState<StageBox>(() =>
-    typeof window === "undefined" ? { mode: "fill", width: 1280, height: 720 } : measure(),
+  const [box, setBox] = useState(() =>
+    typeof window === "undefined" ? { w: 1280, h: 720, landscape: true } : applyViewportVars(),
   );
 
   useEffect(() => {
-    const apply = () => setBox(measure());
-    apply();
-    window.addEventListener("resize", apply);
-    window.addEventListener("orientationchange", apply);
+    let timer = 0;
+    const sync = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setBox(applyViewportVars()), 16);
+    };
+    sync();
+    window.addEventListener("resize", sync);
+    window.addEventListener("orientationchange", sync);
+    screen.orientation?.addEventListener("change", sync);
     const vv = window.visualViewport;
-    vv?.addEventListener("resize", apply);
-    vv?.addEventListener("scroll", apply);
+    vv?.addEventListener("resize", sync);
+    vv?.addEventListener("scroll", sync);
     return () => {
-      window.removeEventListener("resize", apply);
-      window.removeEventListener("orientationchange", apply);
-      vv?.removeEventListener("resize", apply);
-      vv?.removeEventListener("scroll", apply);
+      window.clearTimeout(timer);
+      window.removeEventListener("resize", sync);
+      window.removeEventListener("orientationchange", sync);
+      screen.orientation?.removeEventListener("change", sync);
+      vv?.removeEventListener("resize", sync);
+      vv?.removeEventListener("scroll", sync);
     };
   }, []);
 
   useEffect(() => {
     const lock = () => {
       const ori = screen.orientation as ScreenOrientation & { lock?: (m: string) => Promise<void> };
-      if (ori && typeof ori.lock === "function") {
-        void ori.lock("landscape").catch(() => undefined);
-      }
+      if (typeof ori.lock === "function") void ori.lock("landscape").catch(() => undefined);
     };
-    window.addEventListener("pointerdown", lock);
-    return () => window.removeEventListener("pointerdown", lock);
+    window.addEventListener("pointerup", lock, { once: true });
+    return () => window.removeEventListener("pointerup", lock);
   }, []);
 
-  const style: CSSProperties =
-    box.mode === "rotate"
-      ? {
-          width: box.width,
-          height: box.height,
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%) rotate(90deg)",
-        }
-      : box.mode === "letterbox"
-        ? {
-            width: box.width,
-            height: box.height,
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-          }
-        : {
-            width: box.width,
-            height: box.height,
-            top: 0,
-            left: 0,
-          };
+  const rotate = !box.landscape;
+  const style: CSSProperties = rotate
+    ? {
+        width: box.h,
+        height: box.w,
+        top: 0,
+        left: box.w,
+        transform: "rotate(90deg)",
+        transformOrigin: "top left",
+      }
+    : {
+        width: box.w,
+        height: box.h,
+        top: 0,
+        left: 0,
+        transform: "none",
+        transformOrigin: "top left",
+      };
 
   return (
-    <div className={cn("play-frame", box.mode === "letterbox" && "is-letterbox")}>
-      {box.mode === "rotate" && (
-        <div className="rotate-cue" aria-hidden>
-          将手机横过来游玩
-        </div>
-      )}
-      <div className={cn("play-stage", `is-${box.mode}`)} style={style}>
+    <div className="play-frame">
+      <div className={cn("play-stage", rotate && "is-rotate")} style={style}>
         {children}
       </div>
     </div>

@@ -10,9 +10,11 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" },
       { title: APP_NAME },
       { name: "theme-color", content: "#120c08" },
+      { name: "screen-orientation", content: "landscape" },
+      { name: "mobile-web-app-capable", content: "yes" },
       { name: "description", content: "炉石战棋风格的八人自动对战：招募、三连、升级酒馆，回合结束后自动开战。" },
     ],
     links: [
