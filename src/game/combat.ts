@@ -174,6 +174,52 @@ export function simulateCombat(
   };
 }
 
+function flipSide(side: Side): Side {
+  return side === "player" ? "enemy" : "player";
+}
+
+function flipMinion(m: CombatMinion): CombatMinion {
+  return { ...m, owner: flipSide(m.owner) };
+}
+
+function flipEvent(e: CombatEvent): CombatEvent {
+  const actor = e.actor ? { ...e.actor, side: flipSide(e.actor.side) } : e.actor;
+  const target = e.target ? { ...e.target, side: flipSide(e.target.side) } : e.target;
+  if (e.type === "announce") {
+    let text = e.text;
+    if (text === "你先手攻击") text = "对手先手攻击";
+    else if (text === "对手先手攻击") text = "你先手攻击";
+    return { ...e, actor, target, text };
+  }
+  if (e.type === "summon") {
+    return { ...e, actor, target, owner: flipSide(e.owner), minion: flipMinion(e.minion) };
+  }
+  if (e.type === "end") {
+    const winner = e.winner === "tie" ? "tie" : flipSide(e.winner);
+    return { ...e, actor, target, winner, playerLeft: e.enemyLeft, enemyLeft: e.playerLeft };
+  }
+  return { ...e, actor, target };
+}
+
+/** Same fight, viewed from the opponent. RNG stays on the original simulation. */
+export function invertCombat(result: CombatResult, opponentId: string): CombatResult {
+  const events = result.events.map(flipEvent);
+  const { beats } = buildTimeline(events);
+  const winner = result.winner === "tie" ? "tie" : flipSide(result.winner);
+  return {
+    ...result,
+    events,
+    beats,
+    winner,
+    firstAttacker: flipSide(result.firstAttacker),
+    playerFinal: result.enemyFinal.map(flipMinion),
+    enemyFinal: result.playerFinal.map(flipMinion),
+    playerStart: result.enemyStart.map(flipMinion),
+    enemyStart: result.playerStart.map(flipMinion),
+    opponentId,
+  };
+}
+
 class CombatSim {
   player: CombatMinion[];
   enemy: CombatMinion[];

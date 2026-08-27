@@ -13,6 +13,7 @@ import {
   freezeShop,
   humanPair,
   initLobby,
+  makePlayer,
   moveMinion,
   pairPlayers,
   pickDiscoverOptions,
@@ -29,8 +30,11 @@ import {
 import { createRng, shuffle, uid, type Rng } from "./rng";
 import { HEROES, HERO_BY_ID } from "./heroes";
 import { sfx, unlockAudio, setMuted as setAudioMuted } from "./audio";
+import { connect, disconnect, send } from "@/net/client";
+import type { ClientMsg, SeatView, ServerMsg, Snapshot } from "@/net/protocol";
 
 export type CombatSpeed = 1 | 2 | 4;
+export type PlayMode = "solo" | "online";
 
 interface GameState {
   phase: Phase;
@@ -56,6 +60,12 @@ interface GameState {
   heroChoices: HeroDef[];
   history: FightRecord[];
   replay: FightRecord | null;
+  mode: PlayMode;
+  roomCode: string;
+  hostId: string;
+  seats: SeatView[];
+  endedTurn: boolean;
+  tavernEndsAt: number | null;
 }
 
 interface GameActions {
@@ -89,6 +99,33 @@ interface GameActions {
   openReplay: (record: FightRecord | null) => void;
   usePower: () => void;
   you: () => PlayerState | undefined;
+  createRoom: (name: string) => Promise<void>;
+  joinRoom: (code: string, name: string) => Promise<void>;
+  leaveRoom: () => void;
+  setLobbyReady: () => void;
+  startRoom: () => void;
+  applyNet: (msg: ServerMsg) => void;
+}
+
+function publicToPlayer(pub: Snapshot["players"][number], you: PlayerState | null, youId: string): PlayerState {
+  if (pub.id === youId && you) return you;
+  const base = makePlayer(pub.id, pub.heroId || "jaina", pub.name, pub.isHuman);
+  return {
+    ...base,
+    hp: pub.hp,
+    armor: pub.armor,
+    tavernTier: pub.tavernTier,
+    alive: pub.alive,
+    placement: pub.placement,
+    streak: pub.streak,
+    triples: pub.triples,
+    wins: pub.wins,
+    losses: pub.losses,
+    board: pub.board,
+    hand: [],
+    shop: [],
+    gold: 0,
+  };
 }
 
 let rng: Rng = createRng(Date.now());
@@ -120,7 +157,14 @@ function asInspect(m: MinionInst | CombatMinion): MinionInst {
   return m;
 }
 
-export const useGame = create<GameState & GameActions>((set, get) => ({
+export const useGame = create<GameState & GameActions>((set, get) => {
+  const online = (msg: ClientMsg) => {
+    if (get().mode !== "online") return false;
+    if (!send(msg)) set({ toast: "联机已断开，请重新进房" });
+    return true;
+  };
+
+  return {
   phase: "menu",
   turn: 1,
   players: [],
@@ -144,19 +188,30 @@ export const useGame = create<GameState & GameActions>((set, get) => ({
   heroChoices: [],
   history: [],
   replay: null,
+  mode: "solo",
+  roomCode: "",
+  hostId: "",
+  seats: [],
+  endedTurn: false,
+  tavernEndsAt: null,
 
   you: () => get().players.find((p) => p.id === get().youId),
 
   startSelect: () => {
     unlockAudio();
     sfx.click();
+    disconnect();
     const seed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
     rng = createRng(seed);
     const heroChoices = shuffle(HEROES, rng).slice(0, 4);
-    set({ phase: "hero-select", heroChoices, seed });
+    set({ phase: "hero-select", heroChoices, seed, mode: "solo", roomCode: "", seats: [] });
   },
 
   pickHero: (heroId) => {
+    if (online({ t: "pickHero", heroId })) {
+      sfx.buy();
+      return;
+    }
     unlockAudio();
     sfx.buy();
     const seed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
@@ -199,6 +254,7 @@ export const useGame = create<GameState & GameActions>((set, get) => ({
   },
 
   buy: (uid) => {
+    if (online({ t: "buy", uid })) return;
     const { players, youId, phase } = get();
     if (phase !== "tavern") return;
     const you = players.find((p) => p.id === youId);
@@ -229,6 +285,7 @@ export const useGame = create<GameState & GameActions>((set, get) => ({
   },
 
   buyToBoard: (uid, index) => {
+    if (online({ t: "buyToBoard", uid, index })) return;
     const { players, youId, phase } = get();
     if (phase !== "tavern") return;
     const you = players.find((p) => p.id === youId);
@@ -282,6 +339,10 @@ export const useGame = create<GameState & GameActions>((set, get) => ({
   },
 
   sell: (uid) => {
+    if (online({ t: "sell", uid })) {
+      sfx.sell();
+      return;
+    }
     const { players, youId, phase } = get();
     if (phase !== "tavern") return;
     const you = players.find((p) => p.id === youId);
@@ -295,6 +356,7 @@ export const useGame = create<GameState & GameActions>((set, get) => ({
   },
 
   playHand: (uid, index) => {
+    if (online({ t: "playHand", uid, index })) return;
     const { players, youId, phase } = get();
     if (phase !== "tavern") return;
     const you = players.find((p) => p.id === youId);
@@ -326,6 +388,10 @@ export const useGame = create<GameState & GameActions>((set, get) => ({
   },
 
   refresh: () => {
+    if (online({ t: "refresh" })) {
+      sfx.refresh();
+      return;
+    }
     const { players, youId, phase } = get();
     if (phase !== "tavern") return;
     const you = players.find((p) => p.id === youId);
@@ -341,6 +407,10 @@ export const useGame = create<GameState & GameActions>((set, get) => ({
   },
 
   freezeAll: () => {
+    if (online({ t: "freezeAll" })) {
+      sfx.freeze();
+      return;
+    }
     const { phase } = get();
     if (phase !== "tavern") return;
     sfx.freeze();
@@ -348,12 +418,20 @@ export const useGame = create<GameState & GameActions>((set, get) => ({
   },
 
   freezeSlot: (uid) => {
+    if (online({ t: "freezeSlot", uid })) {
+      sfx.freeze();
+      return;
+    }
     if (get().phase !== "tavern") return;
     sfx.freeze();
     set({ players: withYou(get().players, get().youId, (p) => freezeOne(p, uid)) });
   },
 
   upgrade: () => {
+    if (online({ t: "upgrade" })) {
+      sfx.upgrade();
+      return;
+    }
     const { players, youId, phase } = get();
     if (phase !== "tavern") return;
     const you = players.find((p) => p.id === youId);
@@ -374,6 +452,7 @@ export const useGame = create<GameState & GameActions>((set, get) => ({
   },
 
   move: (uid, index) => {
+    if (online({ t: "move", uid, index })) return;
     if (get().phase !== "tavern") return;
     set({
       players: withYou(get().players, get().youId, (p) => moveMinion(p, uid, index)),
@@ -382,6 +461,10 @@ export const useGame = create<GameState & GameActions>((set, get) => ({
   },
 
   pickDiscover: (defId) => {
+    if (online({ t: "pickDiscover", defId })) {
+      sfx.coin();
+      return;
+    }
     const { players, youId } = get();
     sfx.coin();
     set({
@@ -396,6 +479,7 @@ export const useGame = create<GameState & GameActions>((set, get) => ({
   openReplay: (record) => set({ replay: record, scoutId: record ? null : get().scoutId }),
 
   usePower: () => {
+    if (online({ t: "usePower" })) return;
     const { players, youId, phase } = get();
     if (phase !== "tavern") return;
     const you = players.find((p) => p.id === youId);
@@ -413,10 +497,19 @@ export const useGame = create<GameState & GameActions>((set, get) => ({
   },
 
   skipDiscover: () => {
+    if (online({ t: "skipDiscover" })) {
+      set({ phase: "tavern", discover: [] });
+      return;
+    }
     set({ phase: "tavern", discover: [] });
   },
 
   endTurn: () => {
+    if (online({ t: "endTurn" })) {
+      sfx.click();
+      set({ endedTurn: true, toast: "等待其他玩家…" });
+      return;
+    }
     const st = get();
     if (st.phase !== "tavern") return;
     sfx.click();
@@ -495,12 +588,18 @@ export const useGame = create<GameState & GameActions>((set, get) => ({
   },
 
   skipCombat: () => {
-    const { combat, phase } = get();
+    const { combat, phase, mode } = get();
     if ((phase !== "combat" && phase !== "matchup") || !combat) return;
     set({ combatCursor: combat.events.length - 1, phase: "result" });
+    if (mode === "online") send({ t: "combatDone" });
   },
 
   continueFromResult: () => {
+    if (get().mode === "online") {
+      send({ t: "combatDone" });
+      set({ toast: "等待其他玩家进入下一回合…" });
+      return;
+    }
     const st = get();
     const combat = st.combat;
     if (!combat) return;
@@ -581,4 +680,105 @@ export const useGame = create<GameState & GameActions>((set, get) => ({
       toast: `第 ${turn} 回合`,
     });
   },
-}));
+
+  createRoom: async (name) => {
+    unlockAudio();
+    try {
+      await connect(name);
+      set({ mode: "online", phase: "lobby", toast: "正在创建房间…" });
+      send({ t: "create" });
+    } catch (err) {
+      set({
+        toast: err instanceof Error ? err.message : "无法连接房间服务",
+        phase: "menu",
+        mode: "solo",
+      });
+    }
+  },
+
+  joinRoom: async (code, name) => {
+    unlockAudio();
+    try {
+      await connect(name);
+      set({ mode: "online", phase: "lobby", toast: "正在加入…" });
+      send({ t: "join", code: code.trim().toUpperCase() });
+    } catch (err) {
+      set({
+        toast: err instanceof Error ? err.message : "无法连接房间服务",
+        phase: "menu",
+        mode: "solo",
+      });
+    }
+  },
+
+  leaveRoom: () => {
+    send({ t: "leave" });
+    disconnect();
+    set({
+      mode: "solo",
+      phase: "menu",
+      roomCode: "",
+      hostId: "",
+      seats: [],
+      players: [],
+      combat: null,
+    });
+  },
+
+  setLobbyReady: () => {
+    send({ t: "ready" });
+  },
+
+  startRoom: () => {
+    send({ t: "start" });
+  },
+
+  applyNet: (msg) => {
+    if (msg.t === "error") {
+      set({ toast: msg.message });
+      return;
+    }
+    if (msg.t === "toast") {
+      set({ toast: msg.message });
+      return;
+    }
+    if (msg.t === "joined") {
+      set({
+        mode: "online",
+        phase: "lobby",
+        roomCode: msg.code,
+        youId: msg.playerId,
+        hostId: msg.hostId,
+        toast: `房间 ${msg.code}`,
+      });
+      return;
+    }
+    if (msg.t !== "snapshot") return;
+    const s = msg.snap;
+    const prev = get().combat;
+    const sameFight =
+      prev &&
+      s.combat &&
+      prev.opponentId === s.combat.opponentId &&
+      prev.events.length === s.combat.events.length;
+    set({
+      mode: "online",
+      phase: s.phase,
+      turn: s.turn,
+      youId: s.youId,
+      roomCode: s.roomCode,
+      hostId: s.hostId,
+      seats: s.seats,
+      players: s.players.map((p) => publicToPlayer(p, s.you, s.youId)),
+      combat: s.combat,
+      combatEvents: s.combat?.events ?? [],
+      combatCursor: sameFight ? get().combatCursor : 0,
+      discover: s.discover,
+      heroChoices: s.heroChoices,
+      tavernEndsAt: s.tavernEndsAt,
+      endedTurn: s.endedTurn,
+      toast: s.toast ?? get().toast,
+    });
+  },
+  };
+});

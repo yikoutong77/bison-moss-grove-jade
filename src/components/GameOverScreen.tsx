@@ -7,6 +7,8 @@ export function GameOverScreen() {
   const players = useGame((s) => s.players);
   const youId = useGame((s) => s.youId);
   const startSelect = useGame((s) => s.startSelect);
+  const leaveRoom = useGame((s) => s.leaveRoom);
+  const mode = useGame((s) => s.mode);
   const history = useGame((s) => s.history);
   const openReplay = useGame((s) => s.openReplay);
   const you = players.find((p) => p.id === youId);
@@ -85,7 +87,7 @@ export function GameOverScreen() {
             </ul>
           </div>
         )}
-        <button type="button" className="action-btn primary mt-6 w-full" onClick={startSelect}>
+        <button type="button" className="action-btn primary mt-6 w-full" onClick={mode === "online" ? leaveRoom : startSelect}>
           <RotateCcw className="size-4" />
           再来一局
         </button>

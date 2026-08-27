@@ -37,6 +37,7 @@ export function TavernScreen() {
   const inspectMinion = useGame((s) => s.inspectMinion);
   const scoutId = useGame((s) => s.scoutId);
   const openScout = useGame((s) => s.openScout);
+  const endedTurn = useGame((s) => s.endedTurn);
 
   if (!you) return null;
   const frozen = you.shop.some((m) => m.frozen);
@@ -98,26 +99,26 @@ export function TavernScreen() {
                 </button>
               )}
             </Droppable>
-            <button type="button" className="action-btn bob-btn" disabled={you.gold < 1} onClick={refresh}>
+            <button type="button" className="action-btn bob-btn" disabled={endedTurn || you.gold < 1} onClick={refresh}>
               <RefreshCw className="size-3.5" />
               刷新 · 1
             </button>
-            <button type="button" className={cn("action-btn bob-btn", frozen && "text-ice")} onClick={freezeAll}>
+            <button type="button" className={cn("action-btn bob-btn", frozen && "text-ice")} disabled={endedTurn} onClick={freezeAll}>
               <Snowflake className="size-3.5" />
               {frozen ? "解冻" : "冻结"}
             </button>
             <button
               type="button"
               className="action-btn gold bob-btn"
-              disabled={you.tavernTier >= 6 || you.gold < costUp}
+              disabled={endedTurn || you.tavernTier >= 6 || you.gold < costUp}
               onClick={upgrade}
             >
               <ArrowUpCircle className="size-3.5" />
               {you.tavernTier >= 6 ? "满级" : `升级 · ${costUp}`}
             </button>
-            <button type="button" className="action-btn primary bob-btn end-turn" onClick={endTurn}>
+            <button type="button" className="action-btn primary bob-btn end-turn" disabled={endedTurn} onClick={endTurn}>
               <Flag className="size-3.5" />
-              结束回合
+              {endedTurn ? "等待中" : "结束回合"}
             </button>
           </aside>
 

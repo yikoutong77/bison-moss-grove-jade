@@ -1,8 +1,31 @@
 import { Coins, Heart, Layers, Shield, Volume2, VolumeX, CircleHelp, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useGame } from "@/game/store";
 import { HERO_BY_ID, heroArt } from "@/game/heroes";
 import { canUseHeroPower } from "@/game/engine";
 import { cn } from "@/lib/utils";
+
+function TurnClock() {
+  const endsAt = useGame((s) => s.tavernEndsAt);
+  const ended = useGame((s) => s.endedTurn);
+  const [left, setLeft] = useState(0);
+  useEffect(() => {
+    if (!endsAt) {
+      setLeft(0);
+      return;
+    }
+    const tick = () => setLeft(Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
+    tick();
+    const id = window.setInterval(tick, 250);
+    return () => window.clearInterval(id);
+  }, [endsAt]);
+  if (!endsAt) return null;
+  return (
+    <div className="hud-chip tabular">
+      {ended ? "等待中" : `${left}s`}
+    </div>
+  );
+}
 
 export function Hud({ compact = false }: { compact?: boolean }) {
   const turn = useGame((s) => s.turn);
@@ -67,6 +90,7 @@ export function Hud({ compact = false }: { compact?: boolean }) {
           <Layers className="size-4 text-gold-2" />
           <span className="tabular font-semibold">T{you.tavernTier}</span>
         </div>
+        <TurnClock />
         {you.streak !== 0 && (
           <div className="hud-chip">
             <span className={you.streak > 0 ? "text-gold-2" : "text-hp"}>

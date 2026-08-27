@@ -132,6 +132,7 @@ export interface PlayerState {
 
 export type Phase =
   | "menu"
+  | "lobby"
   | "hero-select"
   | "tavern"
   | "discover"

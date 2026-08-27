@@ -737,3 +737,9 @@ body,
     transition: none;
   }
 }
+
+input {
+  color: inherit;
+  font: inherit;
+}
+

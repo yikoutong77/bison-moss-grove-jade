@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useGame } from "@/game/store";
 import { StartScreen } from "./StartScreen";
+import { LobbyScreen } from "./LobbyScreen";
 import { HeroSelect } from "./HeroSelect";
 import { TavernScreen } from "./TavernScreen";
 import { CombatScreen } from "./CombatScreen";
@@ -8,11 +9,13 @@ import { GameOverScreen } from "./GameOverScreen";
 import { HelpOverlay } from "./HelpOverlay";
 import { FightReplay } from "./FightReplay";
 import { unlockAudio } from "@/game/audio";
+import { onServer } from "@/net/client";
 
 export default function GameSession() {
   const phase = useGame((s) => s.phase);
   const toast = useGame((s) => s.toast);
   const setToast = useGame((s) => s.setToast);
+  const applyNet = useGame((s) => s.applyNet);
 
   useEffect(() => {
     const unlock = () => unlockAudio();
@@ -27,6 +30,8 @@ export default function GameSession() {
     };
   }, []);
 
+  useEffect(() => onServer(applyNet), [applyNet]);
+
   useEffect(() => {
     if (!toast) return;
     const t = window.setTimeout(() => setToast(null), 1800);
@@ -36,6 +41,7 @@ export default function GameSession() {
   return (
     <div className="session-root">
       {phase === "menu" && <StartScreen />}
+      {phase === "lobby" && <LobbyScreen />}
       {phase === "hero-select" && <HeroSelect />}
       {(phase === "tavern" || phase === "discover") && <TavernScreen />}
       {(phase === "matchup" || phase === "combat" || phase === "result") && <CombatScreen />}
