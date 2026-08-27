@@ -14,6 +14,7 @@ export type ClientMsg =
   | { t: "create" }
   | { t: "join"; code: string }
   | { t: "leave" }
+  | { t: "ping" }
   | { t: "ready" }
   | { t: "start" }
   | { t: "pickHero"; heroId: string }

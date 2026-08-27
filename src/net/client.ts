@@ -2,6 +2,7 @@ import type { ClientMsg, ServerMsg } from "./protocol";
 
 const CLIENT_KEY = "tavern-client-id";
 const NAME_KEY = "tavern-player-name";
+const ROOM_KEY = "tavern-room-code";
 
 export function getClientId() {
   try {
@@ -32,6 +33,32 @@ export function saveName(name: string) {
   }
 }
 
+export function getLastRoom() {
+  try {
+    return sessionStorage.getItem(ROOM_KEY) || localStorage.getItem(ROOM_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+export function rememberRoom(code: string) {
+  try {
+    sessionStorage.setItem(ROOM_KEY, code);
+    localStorage.setItem(ROOM_KEY, code);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function forgetRoom() {
+  try {
+    sessionStorage.removeItem(ROOM_KEY);
+    localStorage.removeItem(ROOM_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function wsCandidates() {
   const env = import.meta.env.VITE_WS_URL as string | undefined;
   if (env) return [env];
@@ -50,6 +77,12 @@ type Handler = (msg: ServerMsg) => void;
 let socket: WebSocket | null = null;
 const handlers = new Set<Handler>();
 let helloName = "旅人";
+let stayOnline = false;
+let resume = false;
+let retryTimer: number | null = null;
+let pingTimer: number | null = null;
+let retry = 0;
+let watchersOn = false;
 
 export function onServer(handler: Handler) {
   handlers.add(handler);
@@ -68,7 +101,33 @@ export function send(msg: ClientMsg) {
   return true;
 }
 
+function stopPing() {
+  if (pingTimer) {
+    window.clearInterval(pingTimer);
+    pingTimer = null;
+  }
+}
+
+function startPing() {
+  stopPing();
+  pingTimer = window.setInterval(() => {
+    send({ t: "ping" });
+  }, 12_000);
+}
+
+function clearRetry() {
+  if (retryTimer) {
+    window.clearTimeout(retryTimer);
+    retryTimer = null;
+  }
+}
+
 export function disconnect() {
+  stayOnline = false;
+  resume = false;
+  retry = 0;
+  clearRetry();
+  stopPing();
   socket?.close();
   socket = null;
 }
@@ -96,11 +155,44 @@ function openSocket(url: string, timeoutMs: number) {
   });
 }
 
+function scheduleReconnect() {
+  if (!stayOnline) return;
+  clearRetry();
+  const delay = Math.min(8_000, 500 * 2 ** Math.min(retry, 4));
+  retry += 1;
+  retryTimer = window.setTimeout(() => {
+    connect(helloName).catch(() => scheduleReconnect());
+  }, delay);
+}
+
+function bindWatchers() {
+  if (watchersOn) return;
+  watchersOn = true;
+  const kick = () => {
+    if (!stayOnline) return;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      send({ t: "ping" });
+      return;
+    }
+    retry = 0;
+    connect(helloName).catch(() => scheduleReconnect());
+  };
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") kick();
+  });
+  window.addEventListener("online", kick);
+  window.addEventListener("pageshow", kick);
+}
+
 export async function connect(name: string): Promise<void> {
   helloName = name.trim() || "旅人";
   saveName(helloName);
+  stayOnline = true;
+  bindWatchers();
   if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
     send({ t: "hello", name: helloName, clientId: getClientId() });
+    const code = getLastRoom();
+    if (resume && code) send({ t: "join", code });
     return;
   }
   const urls = wsCandidates();
@@ -109,6 +201,8 @@ export async function connect(name: string): Promise<void> {
     try {
       const ws = await openSocket(url, 4000);
       socket = ws;
+      retry = 0;
+      startPing();
       ws.onmessage = (ev) => {
         try {
           emit(JSON.parse(String(ev.data)) as ServerMsg);
@@ -117,15 +211,26 @@ export async function connect(name: string): Promise<void> {
         }
       };
       ws.onclose = () => {
+        stopPing();
         if (socket === ws) socket = null;
+        if (!stayOnline) return;
+        resume = true;
+        emit({ t: "toast", message: "连接中断，正在重连…" });
+        scheduleReconnect();
       };
       send({ t: "hello", name: helloName, clientId: getClientId() });
+      const code = getLastRoom();
+      if (resume && code) {
+        send({ t: "join", code });
+        resume = false;
+      }
       return;
     } catch (err) {
       lastErr = err instanceof Error ? err : new Error(String(err));
     }
   }
   emit({ t: "error", message: "无法连接房间服务，请检查 8787 或 /ws 反代" });
+  if (stayOnline) scheduleReconnect();
   throw lastErr ?? new Error("无法连接房间服务");
 }
 

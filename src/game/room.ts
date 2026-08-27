@@ -52,6 +52,7 @@ export interface RoomHooks {
 
 const ROPE_MS = 15_000;
 const RESULT_HOLD_MS = 1_200;
+const DROP_MS = 25_000;
 
 function tavernMs(turn: number): number {
   return Math.min(90_000, 40_000 + turn * 5_000);
@@ -93,6 +94,7 @@ export class GameRoom {
       if (h.clientId === clientId) {
         h.connected = true;
         h.name = name || h.name;
+        this.hooks.cancel(`drop:${this.code}:${h.id}`);
         this.hooks.onChange();
         return h;
       }
@@ -113,10 +115,26 @@ export class GameRoom {
     return seat;
   }
 
-  disconnect(playerId: string) {
+  disconnect(playerId: string, immediate = false) {
     const h = this.humans.get(playerId);
     if (!h) return;
     h.connected = false;
+    this.hooks.onChange();
+    if (immediate) {
+      this.dropSeat(playerId);
+      return;
+    }
+    this.hooks.schedule(`drop:${this.code}:${playerId}`, DROP_MS, () => {
+      const still = this.humans.get(playerId);
+      if (!still || still.connected) return;
+      this.dropSeat(playerId);
+    });
+  }
+
+  private dropSeat(playerId: string) {
+    const h = this.humans.get(playerId);
+    if (!h || h.connected) return;
+    this.hooks.cancel(`drop:${this.code}:${playerId}`);
     if (this.phase === "lobby") {
       this.humans.delete(playerId);
       if (this.hostId === playerId) {

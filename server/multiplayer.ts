@@ -78,6 +78,8 @@ wss.on("connection", (ws) => {
       return;
     }
 
+    if (msg.t === "ping") return;
+
     if (msg.t === "create") {
       let code = makeRoomCode();
       while (rooms.has(code)) code = makeRoomCode();
@@ -114,7 +116,7 @@ wss.on("connection", (ws) => {
     }
 
     if (msg.t === "leave") {
-      if (meta.room && meta.playerId) meta.room.disconnect(meta.playerId);
+      if (meta.room && meta.playerId) meta.room.disconnect(meta.playerId, true);
       meta.room = null;
       meta.playerId = "";
       return;

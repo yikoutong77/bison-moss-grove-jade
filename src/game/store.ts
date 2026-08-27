@@ -30,7 +30,7 @@ import {
 import { createRng, shuffle, uid, type Rng } from "./rng";
 import { HEROES, HERO_BY_ID } from "./heroes";
 import { sfx, unlockAudio, setMuted as setAudioMuted, setBgmLevel, setSfxLevel, getBgmLevel, getSfxLevel } from "./audio";
-import { connect, disconnect, send } from "@/net/client";
+import { connect, disconnect, forgetRoom, rememberRoom, send } from "@/net/client";
 import type { ClientMsg, SeatView, ServerMsg, Snapshot } from "@/net/protocol";
 
 export type CombatSpeed = 1 | 2 | 4;
@@ -730,6 +730,7 @@ export const useGame = create<GameState & GameActions>((set, get) => {
 
   leaveRoom: () => {
     send({ t: "leave" });
+    forgetRoom();
     disconnect();
     set({
       mode: "solo",
@@ -760,13 +761,15 @@ export const useGame = create<GameState & GameActions>((set, get) => {
       return;
     }
     if (msg.t === "joined") {
+      rememberRoom(msg.code);
+      const keepPhase = get().mode === "online" && get().phase !== "menu" && get().phase !== "lobby";
       set({
         mode: "online",
-        phase: "lobby",
+        phase: keepPhase ? get().phase : "lobby",
         roomCode: msg.code,
         youId: msg.playerId,
         hostId: msg.hostId,
-        toast: `房间 ${msg.code}`,
+        toast: keepPhase ? `已回到房间 ${msg.code}` : `房间 ${msg.code}`,
       });
       return;
     }
