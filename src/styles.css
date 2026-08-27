@@ -372,19 +372,43 @@ body,
   touch-action: manipulation;
 }
 
+.play-frame {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #0c0806;
+}
+
+.play-frame.is-letterbox {
+  background: #0c0806;
+}
+
+.rotate-cue {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%) rotate(90deg);
+  transform-origin: center;
+  pointer-events: none;
+  letter-spacing: 0.18em;
+  font-size: 11px;
+  color: #f0d080;
+  opacity: 0.7;
+}
+
 .play-stage {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: var(--vvw, 100dvw);
-  height: var(--vvh, 100dvh);
   overflow: hidden;
   background: var(--color-bg);
   container-type: size;
   container-name: stage;
+  box-sizing: border-box;
+}
+
+.play-stage.is-fill {
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
     env(safe-area-inset-left);
-  box-sizing: border-box;
 }
 
 .session-root {
@@ -399,7 +423,7 @@ body,
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
-  --table-card: clamp(2.5rem, 20cqh, 5.2rem);
+  --table-card: min(5.1rem, 11.5cqw, calc((100cqh - 40px) / 4.45));
 }
 
 .combat-shell {
@@ -410,10 +434,10 @@ body,
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.15rem 0.4rem;
+  padding: 0.12rem 0.4rem;
   border-bottom: 1px solid var(--color-border);
   background: color-mix(in oklab, var(--color-bg-deep) 82%, transparent);
-  min-height: 40px;
+  min-height: 36px;
 }
 
 .orb-rail {
@@ -421,7 +445,7 @@ body,
   min-width: 0;
   flex: 1;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.28rem;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -508,18 +532,18 @@ body,
   gap: 0.5rem;
 }
 .table-top .hud-bar {
-  max-width: 56%;
+  max-width: 52%;
   overflow-x: auto;
 }
 .hud-bar.is-compact .hud-chip {
-  min-height: 36px;
-  padding: 0.2rem 0.5rem;
+  min-height: 32px;
+  padding: 0.15rem 0.45rem;
 }
 
 .table-main {
   display: grid;
   min-height: 0;
-  grid-template-columns: minmax(5.2rem, 12cqw) minmax(0, 1fr);
+  grid-template-columns: minmax(4.8rem, 11cqw) minmax(0, 1fr);
 }
 
 .bob-panel {
@@ -547,22 +571,22 @@ body,
 }
 .bob-sell {
   display: flex;
-  min-height: 3.2rem;
+  min-height: 2.8rem;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.15rem;
-  padding: 0.3rem;
+  gap: 0.12rem;
+  padding: 0.25rem;
   border: 1px dashed var(--color-gold);
   border-radius: 12px;
   color: var(--color-muted);
-  font-size: 0.68rem;
+  font-size: 0.65rem;
 }
 .bob-btn {
   width: 100%;
-  min-height: 40px;
-  padding: 0.28rem 0.4rem;
-  font-size: 0.72rem;
+  min-height: 34px;
+  padding: 0.22rem 0.35rem;
+  font-size: 0.68rem;
 }
 .end-turn {
   margin-top: auto;
@@ -572,8 +596,8 @@ body,
   display: grid;
   min-height: 0;
   grid-template-rows: minmax(0, 1.05fr) minmax(0, 1.2fr) minmax(0, 0.88fr);
-  gap: 0.12rem;
-  padding: 0.12rem 0.4rem 0.3rem;
+  gap: 0.08rem;
+  padding: 0.08rem 0.35rem 0.2rem;
 }
 .table-row {
   display: flex;
@@ -651,99 +675,33 @@ body,
   place-items: center;
 }
 .combat-timeline-wrap {
-  max-height: 28cqh;
+  max-height: 26cqh;
   overflow: auto;
-  padding: 0.15rem 0.4rem 0.3rem;
+  padding: 0.12rem 0.4rem 0.25rem;
 }
 .combat-timeline-wrap .timeline-log {
-  max-height: 4.6rem;
+  max-height: 4.4rem;
 }
 
-/* 横屏：炉石手游桌面，整桌塞进短边 */
-@media (orientation: landscape) {
-  .table-shell {
-    --table-card: min(5rem, calc((100cqh - 42px) / 4.55));
-  }
-  .row-label {
-    padding: 0 0.15rem;
-    font-size: 0.58rem;
-  }
-}
-
-@media (orientation: landscape) and (max-height: 430px) {
-  .table-top {
-    min-height: 34px;
-    padding: 0.08rem 0.3rem;
-  }
+@container stage (max-height: 420px) {
   .row-label {
     display: none;
+  }
+  .table-top {
+    min-height: 32px;
+    padding: 0.06rem 0.28rem;
+  }
+  .bob-btn {
+    min-height: 30px;
+    font-size: 0.6rem;
+  }
+  .bob-sell {
+    min-height: 2.2rem;
   }
   .hud-bar.is-compact .hud-chip,
   .hud-chip {
-    min-height: 30px;
-    padding: 0.12rem 0.4rem;
-  }
-  .bob-btn {
-    min-height: 34px;
-    font-size: 0.62rem;
-  }
-  .bob-sell {
-    min-height: 2.4rem;
-  }
-}
-
-/* 竖屏：可玩的堆叠桌面，鲍勃变成底栏，不必把屏幕转 90° */
-@media (orientation: portrait) {
-  .table-shell {
-    --table-card: clamp(3.1rem, 13.5cqw, 4.6rem);
-  }
-  .table-top {
-    flex-wrap: wrap;
-  }
-  .table-top .hud-bar {
-    max-width: 100%;
-    width: 100%;
-  }
-  .table-main {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1fr) auto;
-  }
-  .table-field {
-    order: 1;
-    grid-template-rows: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 0.85fr);
-    padding: 0.1rem 0.25rem 0.15rem;
-  }
-  .bob-panel {
-    order: 2;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: stretch;
-    gap: 0.3rem;
-    overflow-x: auto;
-    padding: 0.3rem 0.35rem calc(0.3rem + env(safe-area-inset-bottom));
-    border-right: 0;
-    border-top: 1px solid var(--color-border);
-  }
-  .bob-face {
-    display: none;
-  }
-  .bob-sell {
-    min-width: 4.2rem;
-    min-height: 44px;
-    flex: 0 0 auto;
-  }
-  .bob-btn {
-    width: auto;
-    flex: 1 1 0;
-    min-width: 4.2rem;
-    min-height: 44px;
-  }
-  .end-turn {
-    margin-top: 0;
-    flex: 1.2 1 0;
-  }
-  .combat-timeline-wrap {
-    max-height: 22cqh;
+    min-height: 28px;
+    padding: 0.1rem 0.35rem;
   }
 }
 

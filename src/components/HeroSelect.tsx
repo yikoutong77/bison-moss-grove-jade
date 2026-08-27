@@ -8,14 +8,11 @@ export function HeroSelect() {
   const heroes = choices.length ? choices : HEROES.slice(0, 4);
 
   return (
-    <div className="tavern-shell h-full overflow-y-auto px-4 py-4 sm:px-8">
-      <div className="mx-auto max-w-5xl">
+    <div className="tavern-shell h-full overflow-hidden px-4 py-3 sm:px-8">
+      <div className="mx-auto flex h-full max-w-5xl flex-col">
         <p className="text-center text-sm tracking-[0.2em] text-gold-2">本局英雄</p>
-        <h2 className="font-display mt-2 text-center text-3xl font-bold">四选一，坐镇酒馆</h2>
-        <p className="mx-auto mt-2 max-w-md text-center text-sm text-muted">
-          每位英雄拥有独特技能。有的带护甲，有的换经济，有的强化场面。
-        </p>
-        <div className="mt-6 grid grid-cols-4 gap-3">
+        <h2 className="font-display mt-1 text-center text-2xl font-bold">四选一，坐镇酒馆</h2>
+        <div className="mt-3 grid min-h-0 flex-1 grid-cols-4 gap-3">
           {heroes.map((h, i) => (
             <button
               key={h.id}
@@ -24,7 +21,7 @@ export function HeroSelect() {
               className="group overflow-hidden rounded-xl border border-border bg-surface text-left shadow-panel transition-transform duration-150 ease-out hover:-translate-y-1 active:scale-[0.96]"
               style={{ animation: `pop-in 400ms ease backwards ${i * 40}ms` }}
             >
-              <div className="relative aspect-[4/5] overflow-hidden">
+              <div className="relative aspect-[5/4] overflow-hidden sm:aspect-[4/5]">
                 <img
                   src={heroArt(h.art)}
                   alt={h.name}
