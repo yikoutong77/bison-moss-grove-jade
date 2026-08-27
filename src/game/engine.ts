@@ -312,7 +312,6 @@ function tryTripleOnce(player: PlayerState): BuyResult {
   };
   for (const m of player.board) add(m);
   for (const m of player.hand) add(m);
-  for (const m of player.shop) add(m);
   for (const [defId, copies] of counts) {
     if (copies.length < 3) continue;
     const used = copies.slice(0, 3);
@@ -329,18 +328,17 @@ function tryTripleOnce(player: PlayerState): BuyResult {
     golden.keywords = [...kw];
 
     const board = player.board.filter((m) => !usedUids.has(m.uid));
-    const shop = player.shop.filter((m) => !usedUids.has(m.uid));
     let hand = player.hand.filter((m) => !usedUids.has(m.uid));
     if (hand.length < MAX_HAND) hand = [...hand, golden];
     else if (board.length < MAX_BOARD) {
       return {
-        player: { ...player, board: [...board, golden], shop, hand, triples: player.triples + 1 },
-        triple: { golden, sourceTier: d.tier },
+        player: { ...player, board: [...board, golden], hand, triples: player.triples + 1 },
+        triple: { golden, sourceTier: player.tavernTier },
       };
-    } else shop.push(golden);
+    } else hand = [...hand, golden];
     return {
-      player: { ...player, board, shop, hand, triples: player.triples + 1 },
-      triple: { golden, sourceTier: d.tier },
+      player: { ...player, board, hand, triples: player.triples + 1 },
+      triple: { golden, sourceTier: player.tavernTier },
     };
   }
   return { player };
@@ -388,7 +386,8 @@ export function addDiscovered(player: PlayerState, defId: string, rng: Rng): Pla
 }
 
 export function pickDiscoverOptions(tier: number, rng: Rng): MinionInst[] {
-  const pool = discoverPool(Math.min(6, tier + 1));
+  const next = Math.min(6, Math.max(1, tier) + 1);
+  const pool = discoverPool(tier >= 6 ? 6 : next);
   return shuffle(pool, rng).slice(0, 3);
 }
 

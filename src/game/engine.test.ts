@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createRng } from "./rng.ts";
-import { makeInst } from "./minions.ts";
+import { makeInst, defOf } from "./minions.ts";
 import {
   buyMinion,
   playFromHand,
@@ -16,6 +16,7 @@ import {
   rollShop,
   sellMinion,
   tryTriple,
+  pickDiscoverOptions,
   applyFightDamage,
   useHeroPower,
 } from "./engine.ts";
@@ -61,6 +62,27 @@ describe("triple", () => {
     assert.equal(res.player.hand[0]!.golden, true);
     assert.equal(res.player.hand[0]!.atk, 1 * 2 + 1);
     assert.equal(res.player.hand[0]!.hp, 2 * 2);
+    assert.equal(res.triple.sourceTier, p.tavernTier);
+  });
+
+  it("does not count unbought shop copies toward a triple", () => {
+    const p = makePlayer("you", "jaina", "吉安娜", true);
+    const a = makeInst("annoyotron");
+    const b = makeInst("annoyotron");
+    const shop = makeInst("annoyotron");
+    const res = tryTriple({ ...p, board: [a], hand: [b], shop: [shop] });
+    assert.equal(res.triple, undefined);
+    assert.equal(res.player.shop.length, 1);
+    assert.equal(res.player.hand.length, 1);
+  });
+
+  it("discovers from the next tavern tier, or tier 6 when already maxed", () => {
+    const low = pickDiscoverOptions(1, createRng(1));
+    assert.equal(low.length, 3);
+    assert.ok(low.every((m) => defOf(m.defId).tier === 2));
+    const maxed = pickDiscoverOptions(6, createRng(2));
+    assert.equal(maxed.length, 3);
+    assert.ok(maxed.every((m) => defOf(m.defId).tier === 6));
   });
 });
 
