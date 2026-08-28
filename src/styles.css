@@ -854,10 +854,17 @@ body,
   --table-card: min(4.45rem, 11cqw, calc((100cqh - 28px) / 5.05));
 }
 .table-main {
+  position: relative;
   display: grid;
   min-width: 0;
   min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+.table-main > :not(.table-top) {
+  grid-row: 1;
+  grid-column: 1;
+  min-width: 0;
+  min-height: 0;
 }
 .tavern-desk {
   position: relative;
@@ -1118,14 +1125,23 @@ body,
 }
 
 .table-top {
+  grid-row: 1;
+  grid-column: 1;
+  z-index: 18;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: flex-end;
-  gap: 0.35rem;
-  padding: 0.1rem 0.35rem;
-  border-bottom: 1px solid var(--color-border);
-  background: color-mix(in oklab, var(--color-bg-deep) 82%, transparent);
-  min-height: 32px;
+  align-self: start;
+  justify-self: end;
+  width: auto;
+  min-height: 0;
+  padding: 0.2rem 0.28rem 0 0;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+}
+.table-top > * {
+  pointer-events: auto;
 }
 
 .orb-rail {
@@ -1230,7 +1246,12 @@ body,
   overflow-x: auto;
 }
 .hud-bar.is-compact {
+  width: auto;
   justify-content: flex-end;
+  background: color-mix(in oklab, var(--color-bg-deep) 72%, transparent);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 0.12rem 0.18rem;
 }
 .hud-bar.is-compact .hud-id {
   display: none;
