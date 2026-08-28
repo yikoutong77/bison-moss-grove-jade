@@ -494,10 +494,12 @@ img {
 }
 .combat-row.row-cards {
   overflow: visible;
-  width: 100%;
+  width: max-content;
+  max-width: 100%;
   flex: 1;
   align-items: center;
   justify-content: center;
+  margin-inline: auto;
 }
 .combat-field.is-quake {
   animation: field-quake 280ms ease-out;
@@ -1044,13 +1046,18 @@ body,
 .desk-glyph.is-used {
   opacity: 0.4;
 }
+.table-main > .desk-end,
+.table-main > .hand-dock {
+  position: absolute;
+  z-index: 12;
+  width: auto;
+  height: auto;
+  max-width: none;
+}
 .desk-end {
   position: absolute;
-  top: 46%;
-  right: 0.22rem;
-  left: auto;
-  bottom: auto;
-  z-index: 8;
+  inset: 50% 0.22rem auto auto;
+  z-index: 12;
   display: flex;
   width: auto;
   height: auto;
@@ -1074,10 +1081,7 @@ body,
 }
 .hand-dock {
   position: absolute;
-  right: 0.22rem;
-  bottom: 0.18rem;
-  left: auto;
-  top: auto;
+  inset: auto 0.22rem 0.18rem auto;
   z-index: 12;
   display: flex;
   width: max-content;
@@ -1087,8 +1091,7 @@ body,
   gap: 0.2rem;
 }
 .hand-dock.is-open {
-  left: auto;
-  right: 0.22rem;
+  inset: auto 0.22rem 0.18rem auto;
   width: min(52cqw, 20rem);
   max-width: min(52cqw, 20rem);
   align-items: stretch;
@@ -1514,9 +1517,15 @@ body,
 }
 .combat-hero-wrap {
   display: flex;
-  width: 100%;
+  width: max-content;
+  margin-inline: auto;
   justify-content: center;
   padding: 0.08rem 0;
+}
+.combat-banner {
+  justify-self: center;
+  width: max-content;
+  max-width: 90%;
 }
 .combat-hero {
   width: 5rem;
