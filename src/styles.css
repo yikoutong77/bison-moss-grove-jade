@@ -858,13 +858,15 @@ body,
   display: grid;
   min-width: 0;
   min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
 }
 .table-main > :not(.table-top) {
-  grid-row: 1;
-  grid-column: 1;
+  grid-area: 1 / 1;
   min-width: 0;
   min-height: 0;
+  width: 100%;
+  height: 100%;
 }
 .tavern-desk {
   position: relative;
@@ -1045,8 +1047,9 @@ body,
 }
 .desk-end {
   position: absolute;
-  right: 0.35rem;
-  top: 38%;
+  right: 0.3rem;
+  bottom: 5.4rem;
+  top: auto;
   z-index: 8;
   display: flex;
   min-width: 3.2rem;
@@ -1067,18 +1070,21 @@ body,
 }
 .hand-dock {
   position: absolute;
-  right: 0.35rem;
+  right: 0.3rem;
   bottom: 0.15rem;
+  left: auto;
   z-index: 12;
   display: flex;
   width: auto;
+  max-width: min(58cqw, 22rem);
   flex-direction: column;
   align-items: flex-end;
   gap: 0.2rem;
 }
 .hand-dock.is-open {
-  left: 0.45rem;
-  right: 3.9rem;
+  left: auto;
+  right: 0.3rem;
+  width: min(58cqw, 22rem);
   align-items: stretch;
 }
 .hand-toggle {
@@ -1125,17 +1131,18 @@ body,
 }
 
 .table-top {
-  grid-row: 1;
-  grid-column: 1;
-  z-index: 18;
+  position: absolute;
+  top: 0.16rem;
+  right: 0.16rem;
+  left: auto;
+  bottom: auto;
+  z-index: 20;
   display: flex;
+  width: max-content;
   align-items: flex-start;
   justify-content: flex-end;
-  align-self: start;
-  justify-self: end;
-  width: auto;
-  min-height: 0;
-  padding: 0.2rem 0.28rem 0 0;
+  margin: 0;
+  padding: 0;
   border: 0;
   background: transparent;
   pointer-events: none;
@@ -1598,10 +1605,6 @@ body,
 @container stage (max-height: 420px) {
   .row-label {
     display: none;
-  }
-  .table-top {
-    min-height: 32px;
-    padding: 0.06rem 0.28rem;
   }
   .bob-btn {
     min-height: 30px;
