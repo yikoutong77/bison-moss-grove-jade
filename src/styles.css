@@ -1085,15 +1085,15 @@ body,
   z-index: 12;
   display: flex;
   width: max-content;
-  max-width: min(52cqw, 20rem);
+  max-width: min(78%, 38rem);
   flex-direction: column;
   align-items: flex-end;
   gap: 0.2rem;
 }
 .hand-dock.is-open {
   inset: auto 0.22rem 0.18rem auto;
-  width: min(52cqw, 20rem);
-  max-width: min(52cqw, 20rem);
+  width: min(78%, 38rem);
+  max-width: min(78%, 38rem);
   align-items: stretch;
 }
 .hand-toggle {
@@ -1114,8 +1114,10 @@ body,
   flex-direction: row;
   gap: 0.4rem;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
+  touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
   border-radius: 12px;
   background: rgb(12 8 6 / 0.82);
@@ -1506,8 +1508,10 @@ body,
   height: 100%;
   min-height: 0;
   overflow: visible;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 1fr) auto;
   justify-items: center;
+  justify-content: center;
   align-items: center;
   padding: 0.1rem 0.55rem 0.16rem;
 }
