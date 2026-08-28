@@ -103,9 +103,8 @@ export function MinionCard({
         onClick?.();
       }}
       onContextMenu={(e) => {
-        if (!onInspect) return;
         e.preventDefault();
-        onInspect();
+        onInspect?.();
       }}
       onPointerDown={() => {
         if (!onInspect) return;

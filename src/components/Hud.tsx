@@ -4,6 +4,7 @@ import { useGame } from "@/game/store";
 import { HERO_BY_ID, heroArt } from "@/game/heroes";
 import { canUseHeroPower } from "@/game/engine";
 import { cn } from "@/lib/utils";
+import { ExitGame } from "./ExitGame";
 
 export function Hud({ compact = false }: { compact?: boolean }) {
   const turn = useGame((s) => s.turn);
@@ -64,6 +65,7 @@ export function Hud({ compact = false }: { compact?: boolean }) {
         <button type="button" className="hud-chip" onClick={() => setHelp(true)} aria-label="帮助">
           <CircleHelp className="size-4" />
         </button>
+        <ExitGame />
       </div>
     </header>
   );

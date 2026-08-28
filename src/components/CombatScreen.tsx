@@ -3,6 +3,7 @@ import { FastForward, Pause, Play } from "lucide-react";
 import { MinionInspect } from "./MinionInspect";
 import { LobbyStrip } from "./LobbyStrip";
 import { CombatBoard } from "./CombatBoard";
+import { ExitGame } from "./ExitGame";
 import { useGame } from "@/game/store";
 import { HERO_BY_ID, heroArt } from "@/game/heroes";
 import { initialPlayback, replayTo, stepPlayback, type PlaybackState } from "@/game/playback";
@@ -245,6 +246,7 @@ export function CombatScreen() {
               </button>
             )}
             {online && <CombatWaitClock />}
+            <ExitGame />
           </div>
         </div>
       </div>

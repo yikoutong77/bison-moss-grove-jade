@@ -1,6 +1,7 @@
 import { Shield } from "lucide-react";
 import { useGame } from "@/game/store";
 import { HEROES, heroArt } from "@/game/heroes";
+import { ExitGame } from "./ExitGame";
 
 export function HeroSelect() {
   const pickHero = useGame((s) => s.pickHero);
@@ -8,7 +9,10 @@ export function HeroSelect() {
   const heroes = choices.length ? choices : HEROES.slice(0, 4);
 
   return (
-    <div className="tavern-shell h-full overflow-hidden px-4 py-3 sm:px-8">
+    <div className="tavern-shell relative h-full overflow-hidden px-4 py-3 sm:px-8">
+      <div className="absolute right-3 top-3 z-10">
+        <ExitGame />
+      </div>
       <div className="mx-auto flex h-full max-w-5xl flex-col">
         <p className="text-center text-sm tracking-[0.2em] text-gold-2">本局英雄</p>
         <h2 className="font-display mt-1 text-center text-2xl font-bold">四选一，坐镇酒馆</h2>
