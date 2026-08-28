@@ -845,12 +845,19 @@ body,
   position: relative;
   height: 100%;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   overflow: hidden;
   --table-card: min(5.1rem, 11.5cqw, calc((100cqh - 40px) / 4.45));
 }
 .tavern-shell {
-  --table-card: min(4.2rem, 10.2cqw, calc((100cqh - 34px) / 5.25));
+  --table-card: min(4.45rem, 11cqw, calc((100cqh - 28px) / 5.05));
+}
+.table-main {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
 }
 .tavern-desk {
   position: relative;
@@ -950,8 +957,8 @@ body,
 
 .desk-portrait {
   position: relative;
-  width: 4rem;
-  height: 4rem;
+  width: 5rem;
+  height: 5rem;
   flex-shrink: 0;
   border-radius: 50%;
   border: 2px solid var(--color-gold);
@@ -1107,41 +1114,45 @@ body,
 }
 
 .combat-shell {
-  grid-template-rows: auto minmax(0, 1fr);
   overflow: visible;
 }
 
 .table-top {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.35rem;
   padding: 0.1rem 0.35rem;
   border-bottom: 1px solid var(--color-border);
   background: color-mix(in oklab, var(--color-bg-deep) 82%, transparent);
-  min-height: 34px;
+  min-height: 32px;
 }
 
 .orb-rail {
   display: flex;
-  min-width: 0;
-  flex: 1;
+  width: 2.45rem;
+  min-height: 0;
+  flex-direction: column;
   align-items: center;
-  gap: 0.28rem;
-  overflow-x: auto;
+  gap: 0.16rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0.18rem 0.12rem;
+  border-right: 1px solid var(--color-border);
+  background: color-mix(in oklab, var(--color-bg-deep) 88%, transparent);
   -webkit-overflow-scrolling: touch;
 }
 
 .hero-orb {
   position: relative;
   display: flex;
-  width: 2.35rem;
+  width: 2.15rem;
   min-height: 0;
   flex-shrink: 0;
   flex-direction: column;
   align-items: center;
-  gap: 0.08rem;
-  padding: 0.1rem 0.1rem 0.28rem;
+  gap: 0.06rem;
+  padding: 0.08rem 0.06rem 0.22rem;
   border: 1px solid var(--color-border);
   border-radius: 10px;
   background: var(--color-surface);
@@ -1191,13 +1202,14 @@ body,
   opacity: 0.4;
 }
 .history-orb {
-  width: 2.4rem;
+  width: 2.15rem;
   justify-content: center;
 }
 .history-pop {
   position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
+  top: 0;
+  left: calc(100% + 6px);
+  right: auto;
   z-index: 30;
   min-width: 10rem;
   padding: 0.4rem;
@@ -1464,8 +1476,8 @@ body,
   padding: 0.08rem 0;
 }
 .combat-hero {
-  width: 4rem;
-  height: 4rem;
+  width: 5rem;
+  height: 5rem;
 }
 .combat-hero.is-ghost {
   opacity: 0.72;

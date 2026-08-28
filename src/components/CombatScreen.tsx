@@ -219,8 +219,9 @@ export function CombatScreen() {
 
   return (
     <div className="table-shell tavern-shell combat-shell">
+      <LobbyStrip />
+      <div className="table-main">
       <div className="table-top">
-        <LobbyStrip />
         <div className="hud-bar is-compact">
           <div className="flex items-center gap-1.5">
             {!online && phase === "combat" && (
@@ -286,6 +287,8 @@ export function CombatScreen() {
           />
         }
       />
+
+      </div>
 
       {online && phase === "result" && (
         <p className="sr-only">

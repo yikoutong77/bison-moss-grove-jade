@@ -147,8 +147,9 @@ export function TavernScreen() {
   return (
     <TableDragProvider onDrop={onDrop}>
       <div className="table-shell tavern-shell">
+        <LobbyStrip />
+        <div className="table-main">
         <div className="table-top">
-          <LobbyStrip />
           <Hud compact />
         </div>
 
@@ -286,6 +287,7 @@ export function TavernScreen() {
               </div>
             )}
           </div>
+        </div>
         </div>
 
         {toast && (
