@@ -850,7 +850,7 @@ body,
   --table-card: min(5.1rem, 11.5cqw, calc((100cqh - 40px) / 4.45));
 }
 .tavern-shell {
-  --table-card: min(3.85rem, 9.6cqw, calc((100cqh - 34px) / 5.55));
+  --table-card: min(4.2rem, 10.2cqw, calc((100cqh - 34px) / 5.25));
 }
 .tavern-desk {
   position: relative;
@@ -1329,7 +1329,7 @@ body,
   flex: 1;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
   padding: 0.1rem 0.2rem 0.22rem;
   overflow-x: auto;
   overflow-y: visible;
