@@ -1047,12 +1047,14 @@ body,
 }
 .desk-end {
   position: absolute;
-  right: 0.3rem;
-  bottom: 5.4rem;
-  top: auto;
+  top: 46%;
+  right: 0.22rem;
+  left: auto;
+  bottom: auto;
   z-index: 8;
   display: flex;
   min-width: 3.2rem;
+  transform: translateY(-50%);
   flex-direction: column;
   align-items: center;
   gap: 0.05rem;
@@ -1070,21 +1072,23 @@ body,
 }
 .hand-dock {
   position: absolute;
-  right: 0.3rem;
-  bottom: 0.15rem;
+  right: 0.22rem;
+  bottom: 0.18rem;
   left: auto;
+  top: auto;
   z-index: 12;
   display: flex;
-  width: auto;
-  max-width: min(58cqw, 22rem);
+  width: max-content;
+  max-width: min(52cqw, 20rem);
   flex-direction: column;
   align-items: flex-end;
   gap: 0.2rem;
 }
 .hand-dock.is-open {
   left: auto;
-  right: 0.3rem;
-  width: min(58cqw, 22rem);
+  right: 0.22rem;
+  width: min(52cqw, 20rem);
+  max-width: min(52cqw, 20rem);
   align-items: stretch;
 }
 .hand-toggle {

@@ -254,6 +254,7 @@ export function TavernScreen() {
             )}
             <YouPortrait art={hero?.art ?? "HERO_08"} name={you.name} hp={you.hp} armor={you.armor} />
           </div>
+        </div>
 
           <EndTurnButton ended={endedTurn} onEnd={endTurn} />
 
@@ -287,7 +288,6 @@ export function TavernScreen() {
               </div>
             )}
           </div>
-        </div>
         </div>
 
         {toast && (
